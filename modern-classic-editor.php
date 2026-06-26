@@ -2,8 +2,8 @@
 /**
  * Plugin Name:       Modern Classic Editor
  * Plugin URI:         https://github.com/PeopleInside/wp-moderneditor
- * Description:       Disattiva Gutenberg e sostituisce l'editor classico di WordPress con TinyMCE 7 moderno (caricato via CDN), con supporto dark mode e toolbar avanzata.
- * Version:           1.0.3
+ * Description:       Disattiva Gutenberg e sostituisce l'editor classico di WordPress con TinyMCE 7 moderno, caricato da CDN oppure offline (bundlato/scaricabile), con supporto dark mode e toolbar avanzata.
+ * Version:           1.1.0
  * Requires at least: 6.0
  * Requires PHP:       7.4
  * Author:             PeopleInside
@@ -17,7 +17,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'MCE_PLUGIN_VERSION', '1.0.1' );
+define( 'MCE_PLUGIN_VERSION', '1.1.0' );
 define( 'MCE_PLUGIN_FILE', __FILE__ );
 define( 'MCE_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'MCE_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
@@ -26,6 +26,7 @@ define( 'MCE_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'MCE_TINYMCE_CDN_VERSION', '7' );
 
 require_once MCE_PLUGIN_DIR . 'includes/class-mce-settings.php';
+require_once MCE_PLUGIN_DIR . 'includes/class-mce-vendor.php';
 require_once MCE_PLUGIN_DIR . 'includes/class-mce-gutenberg.php';
 require_once MCE_PLUGIN_DIR . 'includes/class-mce-editor.php';
 
@@ -45,6 +46,7 @@ final class Modern_Classic_Editor {
 
 	private function __construct() {
 		MCE_Settings::instance();
+		MCE_Vendor::instance();
 		MCE_Gutenberg::instance();
 		MCE_Editor::instance();
 

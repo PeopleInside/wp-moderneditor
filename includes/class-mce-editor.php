@@ -20,6 +20,12 @@ class MCE_Editor {
 	 */
 	const CDN_BASE = 'https://cdn.jsdelivr.net/npm/tinymce@' . MCE_TINYMCE_CDN_VERSION . '/tinymce.min.js';
 
+	/**
+	 * Root della stessa versione CDN, senza il file finale, usata come
+	 * base_url per la risoluzione di temi/skin/icone/plugin lato JS.
+	 */
+	const JSDELIVR_BASE_URL = 'https://cdn.jsdelivr.net/npm/tinymce@' . MCE_TINYMCE_CDN_VERSION;
+
 	public static function instance(): MCE_Editor {
 		if ( null === self::$instance ) {
 			self::$instance = new self();
@@ -153,8 +159,9 @@ class MCE_Editor {
 	}
 
 	/**
-	 * Carica TinyMCE 7 da CDN e il file di inizializzazione del plugin,
-	 * passando in JS le impostazioni salvate (dark mode, toolbar, ecc.).
+	 * Carica TinyMCE (da CDN o da file locali, in base alle impostazioni)
+	 * e lo script di inizializzazione del plugin, passando in JS le
+	 * impostazioni salvate (dark mode, toolbar, ecc.).
 	 */
 	public function enqueue_modern_tinymce( string $hook ): void {
 		if ( ! $this->should_load_modern_editor() ) {
@@ -169,11 +176,30 @@ class MCE_Editor {
 			return;
 		}
 
+		$settings    = MCE_Settings::get();
+		$use_local   = 'local' === $settings['editor_source'];
+		$vendor      = MCE_Vendor::instance();
+		$local_info  = $vendor->get_active_local_version();
+		$source_url  = self::CDN_BASE;
+		$base_url    = self::JSDELIVR_BASE_URL;
+
+		if ( $use_local ) {
+			if ( $vendor->is_version_complete( $local_info['dir'] ) ) {
+				$source_url = $local_info['url'] . 'tinymce.min.js';
+				$base_url   = $local_info['url'];
+			} else {
+				// Sicurezza: se la modalità locale è selezionata ma il bundle
+				// risultasse incompleto (es. cartella uploads danneggiata),
+				// torniamo al CDN piuttosto che rompere l'editor.
+				$use_local = false;
+			}
+		}
+
 		wp_enqueue_script(
 			'mce-modern-tinymce',
-			self::CDN_BASE,
+			$source_url,
 			array(),
-			MCE_PLUGIN_VERSION,
+			$use_local ? $local_info['version'] : MCE_PLUGIN_VERSION,
 			false // in head: TinyMCE deve essere disponibile prima dell'init di WP.
 		);
 
@@ -192,8 +218,7 @@ class MCE_Editor {
 			MCE_PLUGIN_VERSION
 		);
 
-		$settings = MCE_Settings::get();
-		$post_id  = isset( $_GET['post'] ) ? absint( $_GET['post'] ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- solo lettura per contesto, nessuna azione eseguita.
+		$post_id = isset( $_GET['post'] ) ? absint( $_GET['post'] ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- solo lettura per contesto, nessuna azione eseguita.
 
 		wp_localize_script(
 			'mce-modern-tinymce-init',
@@ -207,6 +232,11 @@ class MCE_Editor {
 				'restNonce'      => wp_create_nonce( 'wp_rest' ),
 				'postId'         => $post_id,
 				'embedPreviewPluginUrl' => MCE_PLUGIN_URL . 'assets/js/tinymce-embed-preview.js',
+				// base_url indica a TinyMCE da dove caricare dinamicamente
+				// temi, skin, icone e plugin: di norma li risolve in modo
+				// relativo allo script principale, ma quando serviamo il
+				// file locale da uploads conviene essere espliciti.
+				'editorBaseUrl'  => untrailingslashit( $base_url ),
 			)
 		);
 	}

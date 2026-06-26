@@ -11,3 +11,22 @@
 	border-bottom: 1px solid #dcdcde;
 	padding-bottom: 0.5em;
 }
+
+.mce-vendor-status {
+	background: #fff;
+	border: 1px solid #dcdcde;
+	border-radius: 4px;
+	padding: 12px 16px;
+	margin: 1em 0;
+	max-width: 700px;
+}
+
+.mce-vendor-status h3 {
+	margin-top: 0;
+}
+
+.mce-vendor-status .spinner {
+	visibility: visible;
+	margin-left: 6px;
+}
+

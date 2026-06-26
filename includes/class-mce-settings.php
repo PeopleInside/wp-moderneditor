@@ -34,11 +34,13 @@ class MCE_Settings {
 	 */
 	public static function get_defaults(): array {
 		return array(
-			'disable_gutenberg'   => false,        // Opt-in: l'utente deve attivarlo consapevolmente dalle impostazioni.
-			'disabled_post_types' => array(),       // Nessun post type forzato all'editor classico finché non scelto esplicitamente.
-			'dark_mode'           => 'system',      // 'system' | 'light' | 'dark'
-			'toolbar_mode'        => 'extended',    // 'standard' | 'extended' | 'full'
-			'enable_menubar'      => true,
+			'disable_gutenberg'          => false,  // Opt-in: l'utente deve attivarlo consapevolmente dalle impostazioni.
+			'disabled_post_types'        => array(), // Nessun post type forzato all'editor classico finché non scelto esplicitamente.
+			'dark_mode'                  => 'system', // 'system' | 'light' | 'dark'
+			'toolbar_mode'               => 'extended', // 'standard' | 'extended' | 'full'
+			'enable_menubar'             => true,
+			'editor_source'              => 'cdn',  // 'cdn' (jsDelivr, sempre aggiornabile) | 'local' (offline, bundlata nel plugin o scaricata)
+			'auto_check_tinymce_updates' => false,  // Controllo periodico via wp-cron: disattivato finché l'utente non lo attiva esplicitamente.
 		);
 	}
 
@@ -104,6 +106,11 @@ class MCE_Settings {
 
 		$output['enable_menubar'] = ! empty( $input['enable_menubar'] );
 
+		$editor_source = isset( $input['editor_source'] ) ? sanitize_key( $input['editor_source'] ) : $defaults['editor_source'];
+		$output['editor_source'] = in_array( $editor_source, array( 'cdn', 'local' ), true ) ? $editor_source : $defaults['editor_source'];
+
+		$output['auto_check_tinymce_updates'] = ! empty( $input['auto_check_tinymce_updates'] );
+
 		return $output;
 	}
 
@@ -135,6 +142,36 @@ class MCE_Settings {
 			array(),
 			MCE_PLUGIN_VERSION
 		);
+
+		wp_enqueue_script(
+			'mce-admin-vendor',
+			MCE_PLUGIN_URL . 'assets/js/admin-vendor.js',
+			array(),
+			MCE_PLUGIN_VERSION,
+			true
+		);
+
+		$vendor = MCE_Vendor::instance();
+		$active = $vendor->get_active_local_version();
+
+		wp_localize_script(
+			'mce-admin-vendor',
+			'mceVendorSettings',
+			array(
+				'ajaxUrl'        => admin_url( 'admin-ajax.php' ),
+				'nonce'          => wp_create_nonce( 'mce_vendor_action' ),
+				'activeVersion'  => $active['version'],
+				'activeSource'   => $active['source'],
+				'lastKnownLatest' => get_option( 'mce_tinymce_latest_known_version', array() ),
+				'i18n'           => array(
+					'checking'       => __( 'Controllo in corso…', 'modern-classic-editor' ),
+					'downloading'    => __( 'Download in corso, potrebbe richiedere qualche secondo…', 'modern-classic-editor' ),
+					'upToDate'       => __( 'Stai già usando l\'ultima versione disponibile.', 'modern-classic-editor' ),
+					'updateAvailable' => __( 'È disponibile una nuova versione: ', 'modern-classic-editor' ),
+					'genericError'   => __( 'Si è verificato un errore. Riprova.', 'modern-classic-editor' ),
+				),
+			)
+		);
 	}
 
 	public function render_settings_page(): void {
@@ -144,6 +181,7 @@ class MCE_Settings {
 
 		$settings   = self::get();
 		$post_types = $this->get_available_post_types();
+		$active_local = MCE_Vendor::instance()->get_active_local_version();
 		?>
 		<div class="wrap mce-settings-wrap">
 			<h1><?php esc_html_e( 'Modern Classic Editor', 'modern-classic-editor' ); ?></h1>
@@ -180,6 +218,68 @@ class MCE_Settings {
 								<?php endforeach; ?>
 								<p class="description"><?php esc_html_e( 'Solo i tipi selezionati torneranno all\'editor classico.', 'modern-classic-editor' ); ?></p>
 							</fieldset>
+						</td>
+					</tr>
+				</table>
+
+				<h2 class="title"><?php esc_html_e( 'Sorgente dell\'editor TinyMCE', 'modern-classic-editor' ); ?></h2>
+				<table class="form-table" role="presentation">
+					<tr>
+						<th scope="row"><?php esc_html_e( 'Da dove caricare TinyMCE', 'modern-classic-editor' ); ?></th>
+						<td>
+							<fieldset>
+								<label style="display:block;margin-bottom:6px;">
+									<input type="radio" name="<?php echo esc_attr( self::OPTION_KEY ); ?>[editor_source]" value="cdn" <?php checked( $settings['editor_source'], 'cdn' ); ?> />
+									<?php esc_html_e( 'CDN (jsDelivr) — sempre l\'ultima versione disponibile, richiede una connessione esterna funzionante', 'modern-classic-editor' ); ?>
+								</label>
+								<label style="display:block;">
+									<input type="radio" name="<?php echo esc_attr( self::OPTION_KEY ); ?>[editor_source]" value="local" <?php checked( $settings['editor_source'], 'local' ); ?> />
+									<?php esc_html_e( 'Locale (offline) — file inclusi nel plugin o scaricati in precedenza, nessuna richiesta esterna durante l\'uso dell\'editor', 'modern-classic-editor' ); ?>
+								</label>
+								<p class="description">
+									<?php esc_html_e( 'Con la modalità locale l\'editor funziona anche se il sito non può raggiungere CDN esterni (firewall, ambienti air-gapped, policy di sicurezza restrittive).', 'modern-classic-editor' ); ?>
+								</p>
+							</fieldset>
+						</td>
+					</tr>
+				</table>
+
+				<div id="mce-vendor-status" class="mce-vendor-status">
+					<h3><?php esc_html_e( 'Versione locale disponibile', 'modern-classic-editor' ); ?></h3>
+					<p>
+						<?php
+						printf(
+							/* translators: 1: numero di versione, 2: origine (bundlata col plugin / scaricata) */
+							esc_html__( 'Versione attualmente disponibile offline: %1$s (%2$s)', 'modern-classic-editor' ),
+							'<strong id="mce-active-version">' . esc_html( $active_local['version'] ) . '</strong>',
+							'<span id="mce-active-source" data-downloaded-label="' . esc_attr__( 'scaricata', 'modern-classic-editor' ) . '">' . esc_html( 'bundled' === $active_local['source'] ? __( 'incluse nel plugin', 'modern-classic-editor' ) : __( 'scaricata', 'modern-classic-editor' ) ) . '</span>'
+						);
+						?>
+					</p>
+					<p id="mce-latest-version-info" class="description"></p>
+					<p>
+						<button type="button" class="button" id="mce-check-update-btn">
+							<?php esc_html_e( 'Controlla aggiornamenti', 'modern-classic-editor' ); ?>
+						</button>
+						<button type="button" class="button button-primary" id="mce-download-update-btn" style="display:none;">
+							<?php esc_html_e( 'Scarica e installa l\'ultima versione', 'modern-classic-editor' ); ?>
+						</button>
+						<span id="mce-vendor-spinner" class="spinner" style="float:none;"></span>
+					</p>
+					<p id="mce-vendor-message" class="description"></p>
+				</div>
+
+				<table class="form-table" role="presentation">
+					<tr>
+						<th scope="row"><?php esc_html_e( 'Controllo automatico', 'modern-classic-editor' ); ?></th>
+						<td>
+							<label>
+								<input type="checkbox" name="<?php echo esc_attr( self::OPTION_KEY ); ?>[auto_check_tinymce_updates]" value="1" <?php checked( $settings['auto_check_tinymce_updates'] ); ?> />
+								<?php esc_html_e( 'Controlla automaticamente una volta al giorno se è disponibile una nuova versione e scaricala in background', 'modern-classic-editor' ); ?>
+							</label>
+							<p class="description">
+								<?php esc_html_e( 'Disattivato di default: nessuna richiesta esterna viene effettuata senza il tuo consenso esplicito. Anche con questa opzione disattivata puoi sempre controllare e scaricare manualmente con i bottoni qui sopra.', 'modern-classic-editor' ); ?>
+							</p>
 						</td>
 					</tr>
 				</table>
@@ -222,7 +322,7 @@ class MCE_Settings {
 
 			<hr />
 			<p class="description">
-				<?php esc_html_e( 'TinyMCE viene caricato da CDN (jsDelivr) sotto licenza GPL, senza necessità di account o API key.', 'modern-classic-editor' ); ?>
+				<?php esc_html_e( 'TinyMCE è distribuito sotto licenza GPLv2+ (GNU General Public License). In modalità CDN viene caricato da jsDelivr; in modalità locale i file (identici, non modificati) provengono dal pacchetto ufficiale "tinymce" su npm, incluso nel plugin o scaricato da questa pagina. Nessun account o API key è richiesto in entrambi i casi.', 'modern-classic-editor' ); ?>
 			</p>
 		</div>
 		<?php

@@ -4,23 +4,24 @@ Tags: tinymce, classic editor, gutenberg, dark mode, wysiwyg
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.0.0
+Stable tag: 1.1.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Disattiva Gutenberg e usa una versione moderna di TinyMCE (v7), caricata via CDN, con supporto dark mode e toolbar configurabile.
+Disattiva Gutenberg e usa una versione moderna di TinyMCE (v7), caricata via CDN oppure offline, con supporto dark mode e toolbar configurabile.
 
 == Description ==
 
 Modern Classic Editor risolve due problemi comuni:
 
-1. **TinyMCE datato**: WordPress include internamente una versione di TinyMCE non aggiornata. Questo plugin la sostituisce con TinyMCE 7, caricato da CDN (jsDelivr) sotto licenza GPL, senza bisogno di account o API key.
-2. **Editor a blocchi non desiderato**: permette di disattivare Gutenberg per i tipi di contenuto che scegli (articoli, pagine, custom post type), ripristinando l'editor classico.
+1. **TinyMCE datato**: WordPress include internamente una versione di TinyMCE non aggiornata. Questo plugin la sostituisce con TinyMCE 7, caricato da CDN (jsDelivr) oppure interamente offline, sotto licenza GPL, senza bisogno di account o API key.
+2. **Editor a blocchi non desiderato**: permette di disattivare Gutenberg per i tipi di contenuto che scegli (articoli, pagine, custom post type), ripristinando l'editor classico, senza interferire con il blocco nativo "Editor classico" quando lavori dentro Gutenberg.
 
 Funzionalità principali:
 
-* Toggle per disattivare Gutenberg, per singolo tipo di contenuto
-* TinyMCE 7 moderno, caricato da CDN pubblico (nessuna dipendenza da account Tiny Cloud)
+* Toggle per disattivare Gutenberg, per singolo tipo di contenuto, senza rompere contenuti già pubblicati a blocchi
+* TinyMCE 7 moderno, caricato da CDN pubblico oppure interamente offline (file inclusi nel plugin o scaricabili dalle impostazioni)
+* Controllo manuale o automatico di nuove versioni di TinyMCE, con download e installazione in un clic
 * Dark mode: automatica (segue il sistema), sempre chiara, o sempre scura
 * Tre preset di toolbar: standard, estesa, completa
 * Compatibile con il pulsante nativo "Aggiungi media" di WordPress
@@ -39,9 +40,25 @@ Lo script viene caricato dal browser dell'utente che sta editando (con cache sta
 
 = Funziona offline o su reti con restrizioni? =
 
-No: se il CDN non è raggiungibile, l'editor TinyMCE non si carica e la textarea resta semplice (nessun crash della pagina). Per ambienti completamente offline, valutare il self-hosting dei file TinyMCE.
+Sì. Nelle impostazioni puoi scegliere "Locale (offline)" come sorgente dell'editor: in questo caso TinyMCE viene caricato dai file inclusi nel plugin (o da una versione più recente eventualmente scaricata), senza alcuna richiesta verso CDN esterni durante l'uso dell'editor. È la scelta consigliata per ambienti air-gapped, dietro firewall restrittivi, o con policy di sicurezza che bloccano script di terze parti.
+
+= I file di TinyMCE offline sono legali da distribuire? =
+
+Sì. TinyMCE è distribuito da Tiny Technologies sotto licenza GNU GPLv2 o successiva. I file inclusi nel plugin (e quelli scaricabili dalle impostazioni) provengono dal pacchetto ufficiale "tinymce" pubblicato su npm, senza alcuna modifica al codice. La licenza GPL viene dichiarata esplicitamente nell'inizializzazione dell'editor (`license_key: 'gpl'`).
+
+= Il controllo aggiornamenti di TinyMCE contatta server esterni senza che io lo sappia? =
+
+No. Il controllo automatico giornaliero è disattivato di default: va attivato esplicitamente dalle impostazioni. Puoi sempre controllare e scaricare manualmente una nuova versione con i bottoni dedicati, indipendentemente da questa opzione.
 
 == Changelog ==
+
+= 1.1.0 =
+* Nuovo: sorgente dell'editor selezionabile tra CDN (jsDelivr) e Locale (offline), per ambienti senza accesso a CDN esterni.
+* Nuovo: bundle TinyMCE 7.9.3 incluso direttamente nel plugin per l'uso offline immediato.
+* Nuovo: controllo manuale e automatico (opzionale, disattivato di default) di nuove versioni di TinyMCE, con download e installazione in un clic dalle impostazioni.
+* Fix: il CSS dell'editor a blocchi non viene più rimosso dal frontend per contenuti che contengono già blocchi Gutenberg salvati, anche quando l'editor classico è forzato per quel tipo di contenuto.
+* Fix: gli script legacy di TinyMCE non vengono più svuotati quando si lavora in Gutenberg, così il blocco nativo "Editor classico" continua a funzionare correttamente.
+* Modifica: "Disattiva Gutenberg" e i tipi di contenuto associati sono ora disattivati di default (opt-in), per evitare modifiche impreviste all'attivazione del plugin.
 
 = 1.0.0 =
 * Prima versione pubblica.

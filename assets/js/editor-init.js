@@ -72,6 +72,13 @@
 			toolbar_mode: 'wrap',
 			skin: theme.skin,
 			content_css: theme.content_css,
+			// Indica esplicitamente da dove caricare temi, skin, icone e
+			// plugin core: per default TinyMCE lo deduce dal proprio tag
+			// <script>, ma essere espliciti evita ambiguità quando il file
+			// viene servito da fonti diverse (CDN jsDelivr oppure cartella
+			// locale in wp-content/uploads).
+			base_url: settings.editorBaseUrl || undefined,
+			suffix: '.min',
 			content_style:
 				'.wp-embed-preview-block { margin: 1em 0; border: 1px dashed currentColor; ' +
 				'opacity: 0.85; border-radius: 4px; padding: 4px; overflow: hidden; } ' +
