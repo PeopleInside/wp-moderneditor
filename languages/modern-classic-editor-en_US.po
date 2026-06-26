@@ -1,0 +1,249 @@
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Modern Classic Editor 1.2.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-06-26 13:42+0000\n"
+"PO-Revision-Date: 2026-06-26 13:42+0000\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: en_US\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Domain: modern-classic-editor\n"
+
+#: includes/class-mce-settings.php:310
+msgid "Barra dei menu"
+msgstr "Menu bar"
+
+#: includes/class-mce-settings.php:233
+msgid ""
+"CDN (jsDelivr) — sempre l'ultima versione disponibile, richiede una "
+"connessione esterna funzionante"
+msgstr ""
+"CDN (jsDelivr) — always the latest available version, requires a working "
+"external connection"
+
+#: includes/class-mce-settings.php:294
+msgid "Chiaro"
+msgstr "Light"
+
+#: includes/class-mce-settings.php:305
+msgid "Completa (tutte le funzioni disponibili)"
+msgstr "Full (all available features)"
+
+#: includes/class-mce-settings.php:240
+msgid ""
+"Con la modalità locale l'editor funziona anche se il sito non può "
+"raggiungere CDN esterni (firewall, ambienti air-gapped, policy di sicurezza "
+"restrittive)."
+msgstr ""
+"In local mode the editor keeps working even if the site cannot reach "
+"external CDNs (firewalls, air-gapped environments, strict security "
+"policies)."
+
+#: includes/class-mce-settings.php:188
+msgid ""
+"Configura l'editor classico moderno (TinyMCE 7) e la disattivazione di "
+"Gutenberg."
+msgstr ""
+"Configure the modern classic editor (TinyMCE 7) and the Gutenberg opt-out."
+
+#: includes/class-mce-settings.php:262
+msgid "Controlla aggiornamenti"
+msgstr "Check for updates"
+
+#: includes/class-mce-settings.php:278
+msgid ""
+"Controlla automaticamente una volta al giorno se è disponibile una nuova "
+"versione e scaricala in background"
+msgstr ""
+"Automatically check once a day for a new version and download it in the "
+"background"
+
+#: includes/class-mce-settings.php:274
+msgid "Controllo automatico"
+msgstr "Automatic check"
+
+#: includes/class-mce-settings.php:167
+msgid "Controllo in corso…"
+msgstr "Checking…"
+
+#: includes/class-mce-settings.php:228
+msgid "Da dove caricare TinyMCE"
+msgstr "Where to load TinyMCE from"
+
+#: includes/class-mce-settings.php:196
+msgid "Disattiva Gutenberg"
+msgstr "Disable Gutenberg"
+
+#: includes/class-mce-settings.php:281
+msgid ""
+"Disattivato di default: nessuna richiesta esterna viene effettuata senza il "
+"tuo consenso esplicito. Anche con questa opzione disattivata puoi sempre "
+"controllare e scaricare manualmente con i bottoni qui sopra."
+msgstr ""
+"Disabled by default: no external request is made without your explicit "
+"consent. Even with this option off, you can always check and download "
+"manually using the buttons above."
+
+#: includes/class-mce-settings.php:168
+msgid "Download in corso, potrebbe richiedere qualche secondo…"
+msgstr "Downloading, this may take a few seconds…"
+
+#: includes/class-mce-vendor.php:294
+msgid "Download non riuscito per il file: %s"
+msgstr "Download failed for file: %s"
+
+#: includes/class-mce-settings.php:287
+msgid "Editor TinyMCE moderno"
+msgstr "Modern TinyMCE editor"
+
+#: includes/class-mce-settings.php:193
+msgid "Editor a blocchi (Gutenberg)"
+msgstr "Block editor (Gutenberg)"
+
+#: includes/class-mce-settings.php:304
+msgid "Estesa (font, colori, tabelle, allineamento)"
+msgstr "Extended (fonts, colors, tables, alignment)"
+
+#: includes/class-mce-vendor.php:347
+msgid "Il download è incompleto: alcuni file richiesti risultano mancanti."
+msgstr "The download is incomplete: some required files are missing."
+
+#: includes/class-mce-vendor.php:215
+msgid "Il registro npm ha risposto con codice %d."
+msgstr "The npm registry responded with status code %d."
+
+#: includes/class-mce-vendor.php:314
+msgid "Impossibile salvare il file scaricato: %s"
+msgstr "Could not save the downloaded file: %s"
+
+#: includes/class-mce-settings.php:237
+msgid ""
+"Locale (offline) — file inclusi nel plugin o scaricati in precedenza, "
+"nessuna richiesta esterna durante l'uso dell'editor"
+msgstr ""
+"Local (offline) — files bundled with the plugin or previously downloaded, no"
+" external requests while using the editor"
+
+#: includes/class-mce-settings.php:66 includes/class-mce-settings.php:67
+#: includes/class-mce-settings.php:187
+msgid "Modern Classic Editor"
+msgstr "Modern Classic Editor"
+
+#: includes/class-mce-settings.php:314
+msgid "Mostra la barra dei menu (File, Modifica, Inserisci, ecc.)"
+msgstr "Show the menu bar (File, Edit, Insert, etc.)"
+
+#: includes/class-mce-vendor.php:234
+msgid "Nessuna versione 7.x trovata su npm."
+msgstr "No 7.x version found on npm."
+
+#: includes/class-mce-vendor.php:258
+msgid "Numero di versione non valido."
+msgstr "Invalid version number."
+
+#: includes/class-mce-vendor.php:371 includes/class-mce-vendor.php:405
+msgid "Permessi insufficienti."
+msgstr "Insufficient permissions."
+
+#: includes/class-mce-vendor.php:222
+msgid "Risposta del registro npm non valida."
+msgstr "Invalid response from the npm registry."
+
+#: includes/class-mce-settings.php:265
+msgid "Scarica e installa l'ultima versione"
+msgstr "Download and install the latest version"
+
+#: includes/class-mce-settings.php:295
+msgid "Scuro"
+msgstr "Dark"
+
+#: includes/class-mce-settings.php:293
+msgid "Segui il sistema operativo"
+msgstr "Follow operating system"
+
+#: includes/class-mce-settings.php:171
+msgid "Si è verificato un errore. Riprova."
+msgstr "Something went wrong. Please try again."
+
+#: includes/class-mce-settings.php:219
+msgid "Solo i tipi selezionati torneranno all'editor classico."
+msgstr "Only the selected types will switch back to the classic editor."
+
+#: includes/class-mce-settings.php:225
+msgid "Sorgente dell'editor TinyMCE"
+msgstr "TinyMCE editor source"
+
+#: includes/class-mce-settings.php:169
+msgid "Stai già usando l'ultima versione disponibile."
+msgstr "You're already using the latest available version."
+
+#: includes/class-mce-settings.php:303
+msgid "Standard (come WordPress di default)"
+msgstr "Standard (WordPress default)"
+
+#: includes/class-mce-settings.php:290
+msgid "Tema (dark mode)"
+msgstr "Theme (dark mode)"
+
+#: includes/class-mce-vendor.php:389
+msgid "TinyMCE %s scaricato e installato correttamente."
+msgstr "TinyMCE %s downloaded and installed successfully."
+
+#: includes/class-mce-settings.php:325
+msgid ""
+"TinyMCE è distribuito sotto licenza GPLv2+ (GNU General Public License). In "
+"modalità CDN viene caricato da jsDelivr; in modalità locale i file "
+"(identici, non modificati) provengono dal pacchetto ufficiale \"tinymce\" su"
+" npm, incluso nel plugin o scaricato da questa pagina. Nessun account o API "
+"key è richiesto in entrambi i casi."
+msgstr ""
+"TinyMCE is distributed under the GPLv2+ license (GNU General Public "
+"License). In CDN mode it is loaded from jsDelivr; in local mode the files "
+"(identical, unmodified) come from the official \"tinymce\" package on npm, "
+"either bundled with the plugin or downloaded from this page. No account or "
+"API key is required in either case."
+
+#: includes/class-mce-settings.php:205
+msgid "Tipi di contenuto"
+msgstr "Content types"
+
+#: includes/class-mce-settings.php:300
+msgid "Toolbar"
+msgstr "Toolbar"
+
+#: includes/class-mce-settings.php:200
+msgid ""
+"Usa l'editor classico invece dell'editor a blocchi per i tipi di contenuto "
+"selezionati qui sotto"
+msgstr ""
+"Use the classic editor instead of the block editor for the content types "
+"selected below"
+
+#: includes/class-mce-settings.php:253
+msgid "Versione attualmente disponibile offline: %1$s (%2$s)"
+msgstr "Currently available offline version: %1$s (%2$s)"
+
+#: includes/class-mce-settings.php:248
+msgid "Versione locale disponibile"
+msgstr "Available local version"
+
+#: includes/class-mce-vendor.php:376
+msgid "Versione non specificata."
+msgstr "Version not specified."
+
+#: includes/class-mce-settings.php:255
+msgid "incluse nel plugin"
+msgstr "bundled with the plugin"
+
+#: includes/class-mce-settings.php:255 includes/class-mce-settings.php:255
+msgid "scaricata"
+msgstr "downloaded"
+
+#: includes/class-mce-settings.php:170
+msgid "È disponibile una nuova versione: "
+msgstr "A new version is available: "

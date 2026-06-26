@@ -4,7 +4,7 @@ Tags: tinymce, classic editor, gutenberg, dark mode, wysiwyg
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.1.0
+Stable tag: 1.2.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -51,6 +51,11 @@ Sì. TinyMCE è distribuito da Tiny Technologies sotto licenza GNU GPLv2 o succe
 No. Il controllo automatico giornaliero è disattivato di default: va attivato esplicitamente dalle impostazioni. Puoi sempre controllare e scaricare manualmente una nuova versione con i bottoni dedicati, indipendentemente da questa opzione.
 
 == Changelog ==
+
+= 1.2.0 =
+* Fix: lo spinner accanto a "Controlla aggiornamenti" non è più visibile in modo permanente; appare solo durante un controllo o un download in corso.
+* Nuovo: supporto completo alla lingua inglese (file di traduzione en_US e en_GB inclusi in `languages/`).
+* Modifica: il caricamento delle traduzioni è stato spostato dall'hook `plugins_loaded` a `init`, in linea con le raccomandazioni WordPress più recenti.
 
 = 1.1.0 =
 * Nuovo: sorgente dell'editor selezionabile tra CDN (jsDelivr) e Locale (offline), per ambienti senza accesso a CDN esterni.

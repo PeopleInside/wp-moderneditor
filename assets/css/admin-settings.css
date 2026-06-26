@@ -26,7 +26,12 @@
 }
 
 .mce-vendor-status .spinner {
-	visibility: visible;
 	margin-left: 6px;
+	visibility: hidden;
+	float: none;
+}
+
+.mce-vendor-status .spinner.is-active {
+	visibility: visible;
 }
 
