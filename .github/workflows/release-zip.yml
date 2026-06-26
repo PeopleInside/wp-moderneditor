@@ -21,13 +21,12 @@ jobs:
           mkdir -p $PLUGIN_NAME
           
           # Copia tutti i file del plugin nella cartella
-          # Escludiamo .git, .github e file non necessari
+          # Escludiamo .git, .github, la cartella stessa e file non necessari
           rsync -av --exclude='.git' \
                    --exclude='.github' \
                    --exclude='.gitignore' \
-                   --exclude='README.md' \
-                   --exclude='SECURITY.md' \
-                   --exclude='LICENSE' \
+                   --exclude="$PLUGIN_NAME" \
+                   --exclude='*.zip' \
                    ./ $PLUGIN_NAME/
           
           # Crea lo ZIP
