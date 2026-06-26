@@ -1,0 +1,43 @@
+name: Build Plugin ZIP
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Checkout codice
+        uses: actions/checkout@v4
+
+      - name: Crea ZIP del plugin
+        run: |
+          # Crea la cartella con il nome corretto del plugin
+          PLUGIN_NAME="modern-classic-editor"
+          mkdir -p $PLUGIN_NAME
+          
+          # Copia tutti i file del plugin nella cartella
+          # Escludiamo .git, .github e file non necessari
+          rsync -av --exclude='.git' \
+                   --exclude='.github' \
+                   --exclude='.gitignore' \
+                   --exclude='README.md' \
+                   --exclude='SECURITY.md' \
+                   --exclude='LICENSE' \
+                   ./ $PLUGIN_NAME/
+          
+          # Crea lo ZIP
+          zip -r $PLUGIN_NAME.zip $PLUGIN_NAME
+          
+          echo "PLUGIN_NAME=$PLUGIN_NAME" >> $GITHUB_ENV
+
+      - name: Carica ZIP nella Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ env.PLUGIN_NAME }}.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
