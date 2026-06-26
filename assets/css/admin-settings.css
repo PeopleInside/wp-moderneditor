@@ -1,0 +1,13 @@
+.mce-settings-wrap .form-table th {
+	width: 240px;
+}
+
+.mce-settings-wrap fieldset label {
+	font-weight: normal;
+}
+
+.mce-settings-wrap .title {
+	margin-top: 2em;
+	border-bottom: 1px solid #dcdcde;
+	padding-bottom: 0.5em;
+}
