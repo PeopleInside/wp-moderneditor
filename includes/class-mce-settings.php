@@ -34,7 +34,7 @@ class MCE_Settings {
 	 */
 	public static function get_defaults(): array {
 		return array(
-			'disable_gutenberg'   => false,         // Disattiva Gutenberg globalmente o per tipo.
+			'disable_gutenberg'   => true,         // Disattiva Gutenberg globalmente o per tipo.
 			'disabled_post_types' => array( 'post', 'page' ),
 			'dark_mode'           => 'system',      // 'system' | 'light' | 'dark'
 			'toolbar_mode'        => 'extended',    // 'standard' | 'extended' | 'full'
