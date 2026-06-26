@@ -34,8 +34,8 @@ class MCE_Settings {
 	 */
 	public static function get_defaults(): array {
 		return array(
-			'disable_gutenberg'   => true,         // Disattiva Gutenberg globalmente o per tipo.
-			'disabled_post_types' => array( 'post', 'page' ),
+			'disable_gutenberg'   => false,        // Opt-in: l'utente deve attivarlo consapevolmente dalle impostazioni.
+			'disabled_post_types' => array(),       // Nessun post type forzato all'editor classico finché non scelto esplicitamente.
 			'dark_mode'           => 'system',      // 'system' | 'light' | 'dark'
 			'toolbar_mode'        => 'extended',    // 'standard' | 'extended' | 'full'
 			'enable_menubar'      => true,

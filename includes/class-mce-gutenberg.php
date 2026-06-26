@@ -49,10 +49,25 @@ class MCE_Gutenberg {
 	 * @param string $post_type
 	 */
 	public function maybe_disable_block_editor( bool $use_block_editor, string $post_type ): bool {
-		if ( $this->is_post_type_disabled( $post_type ) ) {
-			return false;
+		if ( ! $this->is_post_type_disabled( $post_type ) ) {
+			return $use_block_editor;
 		}
-		return $use_block_editor;
+
+		// Se stiamo aprendo un post/pagina esistente che contiene già
+		// blocchi salvati, lasciamo Gutenberg attivo per quel singolo
+		// contenuto: forzare l'editor classico mostrerebbe i commenti
+		// HTML dei blocchi (<!-- wp:paragraph -->...) come testo grezzo
+		// nell'editor, generando contenuti rotti al primo salvataggio.
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- solo lettura per contesto, nessuna azione eseguita.
+		$post_id = isset( $_GET['post'] ) ? absint( $_GET['post'] ) : 0;
+		if ( $post_id ) {
+			$post = get_post( $post_id );
+			if ( $post instanceof WP_Post && function_exists( 'has_blocks' ) && has_blocks( $post ) ) {
+				return $use_block_editor;
+			}
+		}
+
+		return false;
 	}
 
 	public function maybe_disable_widgets_block_editor( bool $use_widgets_block_editor ): bool {
@@ -69,10 +84,24 @@ class MCE_Gutenberg {
 		}
 
 		$post_type = get_post_type();
-		if ( $post_type && $this->is_post_type_disabled( $post_type ) ) {
-			wp_dequeue_style( 'wp-block-library' );
-			wp_dequeue_style( 'wp-block-library-theme' );
-			wp_dequeue_style( 'global-styles' );
+		if ( ! $post_type || ! $this->is_post_type_disabled( $post_type ) ) {
+			return;
 		}
+
+		// Sicurezza: se il contenuto contiene blocchi Gutenberg già salvati
+		// (anche se l'editor a blocchi è ora disattivato per questo post type),
+		// il CSS dei blocchi deve restare caricato, altrimenti il markup a
+		// blocchi perde stili, allineamenti e colonne e la pagina si rompe
+		// visivamente. Disattivare l'editor non riconverte i contenuti
+		// esistenti: il markup a blocchi resta nel post finché non viene
+		// modificato manualmente.
+		$post = get_queried_object();
+		if ( $post instanceof WP_Post && function_exists( 'has_blocks' ) && has_blocks( $post ) ) {
+			return;
+		}
+
+		wp_dequeue_style( 'wp-block-library' );
+		wp_dequeue_style( 'wp-block-library-theme' );
+		wp_dequeue_style( 'global-styles' );
 	}
 }

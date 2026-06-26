@@ -97,6 +97,13 @@ class MCE_Editor {
 	 * Determina se la pagina admin corrente è una pagina di editing
 	 * dove ha senso caricare l'editor classico (post.php, post-new.php,
 	 * o pagine con wp_editor() come widget testo, ecc.).
+	 *
+	 * IMPORTANTE: su post.php/post-new.php non basta controllare la
+	 * pagina ($pagenow): se il post type corrente usa Gutenberg, qui
+	 * deve restituire false. Altrimenti gli script legacy 'editor' e
+	 * 'wp-tinymce' verrebbero svuotati anche dentro l'editor a blocchi,
+	 * rompendo il blocco nativo "Editor classico" (core/freeform), che
+	 * dipende proprio da quegli script per funzionare.
 	 */
 	private function should_load_modern_editor(): bool {
 		if ( ! is_admin() ) {
@@ -106,7 +113,43 @@ class MCE_Editor {
 		global $pagenow;
 		$editor_pages = array( 'post.php', 'post-new.php', 'widgets.php', 'customize.php' );
 
-		return in_array( $pagenow, $editor_pages, true );
+		if ( ! in_array( $pagenow, $editor_pages, true ) ) {
+			return false;
+		}
+
+		if ( in_array( $pagenow, array( 'post.php', 'post-new.php' ), true ) ) {
+			$post_type = $this->get_current_post_type_from_request();
+			if ( '' !== $post_type && ! $this->uses_classic_editor( $post_type ) ) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	/**
+	 * Recupera il post type della schermata corrente di editing,
+	 * senza richiedere get_current_screen() (non sempre disponibile
+	 * nei hook precoci come wp_default_scripts).
+	 */
+	private function get_current_post_type_from_request(): string {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- solo lettura per contesto, nessuna azione eseguita.
+		if ( isset( $_GET['post'] ) ) {
+			$post = get_post( absint( $_GET['post'] ) );
+			return $post ? $post->post_type : '';
+		}
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- solo lettura per contesto, nessuna azione eseguita.
+		if ( isset( $_GET['post_type'] ) ) {
+			return sanitize_key( wp_unslash( $_GET['post_type'] ) );
+		}
+
+		global $pagenow;
+		if ( 'post-new.php' === $pagenow ) {
+			return 'post'; // Default di WordPress quando non è specificato post_type.
+		}
+
+		return '';
 	}
 
 	/**
