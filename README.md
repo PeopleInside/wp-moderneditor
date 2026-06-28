@@ -3,14 +3,11 @@ A modern editor for Wordpress
 
 <img width="1315" height="603" alt="Screenshot 2026-06-26 084839" src="https://github.com/user-attachments/assets/822c3b8d-f367-4013-9245-111377594c53" />
 
-## License & Third-Party Components
+## License
 
-This plugin is licensed under the MIT License.
+This plugin is licensed under the GNU General Public License v2.0 or later (GPLv2+).
 
-**Note about TinyMCE:** This plugin loads TinyMCE 7 from a public CDN (jsdelivr.net). 
-TinyMCE 7 is licensed under GPLv2+. By using this plugin, you are loading TinyMCE 
-from an external source at runtime. Please ensure this complies with your use case 
-and licensing requirements.
+**Note about TinyMCE:** This plugin loads TinyMCE 7 from a public CDN (jsdelivr.net) or bundles it offline. TinyMCE 7 is also licensed under GPLv2+, ensuring full license compatibility across the entire project.
 
 ## Disclaimer
 
