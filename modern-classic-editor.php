@@ -3,7 +3,7 @@
  * Plugin Name:       Modern Classic Editor
  * Plugin URI:         https://github.com/PeopleInside/wp-moderneditor
  * Description:       Disattiva Gutenberg e sostituisce l'editor classico di WordPress con TinyMCE 7 moderno, caricato da CDN oppure offline (bundlato/scaricabile), con supporto dark mode e toolbar avanzata.
- * Version:           1.2.2
+ * Version:           1.2.3
  * Requires at least: 6.0
  * Requires PHP:       7.4
  * Author:             PeopleInside
@@ -17,7 +17,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'MCE_PLUGIN_VERSION', '1.2.2' );
+define( 'MCE_PLUGIN_VERSION', '1.2.3' );
 define( 'MCE_PLUGIN_FILE', __FILE__ );
 define( 'MCE_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'MCE_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
@@ -29,6 +29,7 @@ require_once MCE_PLUGIN_DIR . 'includes/class-mce-settings.php';
 require_once MCE_PLUGIN_DIR . 'includes/class-mce-vendor.php';
 require_once MCE_PLUGIN_DIR . 'includes/class-mce-gutenberg.php';
 require_once MCE_PLUGIN_DIR . 'includes/class-mce-editor.php';
+require_once MCE_PLUGIN_DIR . 'includes/class-mce-updater.php';
 
 /**
  * Bootstrap del plugin.
@@ -49,6 +50,12 @@ final class Modern_Classic_Editor {
 		MCE_Vendor::instance();
 		MCE_Gutenberg::instance();
 		MCE_Editor::instance();
+
+		// Solo in wp-admin: gli hook di update dei plugin (transient,
+		// plugins_api, upgrader_*) sono rilevanti esclusivamente lì.
+		if ( is_admin() ) {
+			MCE_Updater::instance();
+		}
 
 		register_activation_hook( MCE_PLUGIN_FILE, array( $this, 'on_activate' ) );
 		add_action( 'init', array( $this, 'load_textdomain' ) );

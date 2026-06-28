@@ -4,7 +4,7 @@ Tags: tinymce, classic editor, gutenberg, dark mode, wysiwyg
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.2.1
+Stable tag: 1.2.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -25,6 +25,7 @@ Funzionalità principali:
 * Dark mode: automatica (segue il sistema), sempre chiara, o sempre scura
 * Tre preset di toolbar: standard, estesa, completa
 * Compatibile con il pulsante nativo "Aggiungi media" di WordPress
+* Aggiornamenti del plugin stesso integrati nel meccanismo nativo di WordPress, tramite le release GitHub ufficiali
 
 == Installation ==
 
@@ -50,7 +51,15 @@ Sì. TinyMCE è distribuito da Tiny Technologies sotto licenza GNU GPLv2 o succe
 
 No. Il controllo automatico giornaliero è disattivato di default: va attivato esplicitamente dalle impostazioni. Puoi sempre controllare e scaricare manualmente una nuova versione con i bottoni dedicati, indipendentemente da questa opzione.
 
+= Come vengono aggiornate le nuove versioni del plugin stesso (non di TinyMCE)? =
+
+Il plugin si integra con il meccanismo nativo di aggiornamento dei plugin di WordPress: se è pubblicata una nuova release sul repository GitHub ufficiale (github.com/PeopleInside/wp-moderneditor), comparirà nella pagina Plugin con lo stesso avviso "Aggiornamento disponibile" e lo stesso bottone "Aggiorna ora" usati per i plugin della directory ufficiale di WordPress.org, ed è compatibile con gli aggiornamenti automatici dei plugin se li attivi dalla stessa pagina. Il controllo avviene in background, in HTTPS, al massimo ogni 12 ore (la stessa cadenza che WordPress usa già per tutti i plugin installati).
+
 == Changelog ==
+
+= 1.2.3 =
+* Nuovo: il plugin controlla ora le nuove versioni pubblicate sul repository GitHub ufficiale e si integra con il meccanismo nativo di aggiornamento dei plugin di WordPress (stessa interfaccia "Aggiornamento disponibile" e bottone "Aggiorna ora" dei plugin della directory ufficiale; compatibile con gli auto-update automatici dei plugin).
+* Fix: corretta la costante di versione interna del plugin, che non era allineata alla versione dichiarata nell'header e in questo changelog.
 
 = 1.2.0 =
 * Fix: lo spinner accanto a "Controlla aggiornamenti" non è più visibile in modo permanente; appare solo durante un controllo o un download in corso.
