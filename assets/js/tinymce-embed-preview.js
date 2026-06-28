@@ -20,6 +20,73 @@
 	// Riconosce URL "nudi" su una riga propria, dentro o fuori da un paragrafo.
 	var URL_LINE_REGEX = /^https?:\/\/[^\s<]+$/i;
 
+	// Tag che non devono mai comparire in un embed oEmbed legittimo
+	// (player video/social restituiscono al massimo iframe/blockquote/script
+	// di supporto): li rimuoviamo per intero, contenuto incluso.
+	var DISALLOWED_TAGS = [ 'script', 'style', 'link', 'object', 'embed', 'meta', 'base', 'form' ];
+
+	// Protocolli ammessi per attributi URL-like (href, src, ecc.):
+	// blocca javascript:, data:text/html, vbscript: e simili.
+	var SAFE_URL_PATTERN = /^(https?:|\/\/|\/|#)/i;
+	var URL_LIKE_ATTRS = [ 'href', 'src', 'xlink:href', 'action', 'formaction' ];
+
+	/**
+	 * Sanifica un blocco HTML di anteprima oEmbed prima di inserirlo nel DOM
+	 * dell'editor: l'HTML arriva da un servizio terzo (tramite il proxy
+	 * oEmbed di WordPress) e non può essere considerato attendibile al 100%
+	 * (provider oEmbed di terze parti, redirect, risposte malformate).
+	 * Costruisce il markup in un documento inerte (non eseguibile, non
+	 * agganciato al DOM visibile) tramite DOMParser, poi rimuove script/tag
+	 * pericolosi, attributi "on*" e URL con protocollo non sicuro, e infine
+	 * mette in sandbox eventuali iframe.
+	 */
+	function sanitizeEmbedHtml( html ) {
+		if ( ! html || typeof DOMParser === 'undefined' ) {
+			return '';
+		}
+
+		var doc;
+		try {
+			doc = new DOMParser().parseFromString( html, 'text/html' );
+		} catch ( e ) {
+			return '';
+		}
+
+		DISALLOWED_TAGS.forEach( function ( tagName ) {
+			var nodes = doc.querySelectorAll( tagName );
+			nodes.forEach( function ( node ) {
+				node.parentNode && node.parentNode.removeChild( node );
+			} );
+		} );
+
+		var allNodes = doc.body ? doc.body.querySelectorAll( '*' ) : [];
+		allNodes.forEach( function ( el ) {
+			// Rimuove tutti gli attributi "on*" (onload, onerror, onclick, ...).
+			Array.prototype.slice.call( el.attributes ).forEach( function ( attr ) {
+				var name = attr.name.toLowerCase();
+
+				if ( name.indexOf( 'on' ) === 0 ) {
+					el.removeAttribute( attr.name );
+					return;
+				}
+
+				if ( URL_LIKE_ATTRS.indexOf( name ) !== -1 && attr.value && ! SAFE_URL_PATTERN.test( attr.value.trim() ) ) {
+					el.removeAttribute( attr.name );
+				}
+			} );
+
+			// Gli embed video (YouTube, Vimeo, ecc.) usano <iframe>: lo
+			// lasciamo, ma in sandbox, così anche un iframe verso un host
+			// non fidato non può fare popup, navigare il top-level o
+			// accedere allo stesso origin della pagina di amministrazione.
+			if ( 'iframe' === el.tagName.toLowerCase() && ! el.hasAttribute( 'sandbox' ) ) {
+				el.setAttribute( 'sandbox', 'allow-scripts allow-same-origin allow-popups allow-presentation' );
+			}
+		} );
+
+		return doc.body ? doc.body.innerHTML : '';
+	}
+
 	/**
 	 * Richiede l'anteprima HTML al proxy oEmbed di WordPress.
 	 * Ritorna una Promise che risolve con l'HTML, o null se non embeddable.
@@ -93,9 +160,10 @@
 				}
 
 				fetchEmbedHtml( url ).then( function ( html ) {
-					cache[ url ] = html || false;
-					if ( html ) {
-						renderPreview( parent, url, html );
+					var safeHtml = html ? sanitizeEmbedHtml( html ) : '';
+					cache[ url ] = safeHtml || false;
+					if ( safeHtml ) {
+						renderPreview( parent, url, safeHtml );
 					}
 				} );
 			} );
