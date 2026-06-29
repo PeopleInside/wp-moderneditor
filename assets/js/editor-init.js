@@ -1,10 +1,17 @@
 /**
- * Inizializzazione di TinyMCE 7 (caricato da CDN) in sostituzione
- * dell'editor classico bundlato in WordPress.
+ * Inizializzazione di TinyMCE moderno (7 oppure 8, in base alla scelta
+ * salvata nelle impostazioni del plugin; caricato da CDN o in locale)
+ * in sostituzione dell'editor classico bundlato in WordPress.
  *
  * Si aggancia alle textarea che WordPress avrebbe normalmente trasformato
  * con la propria versione di TinyMCE (di solito #content, o l'id passato
  * a wp_editor()), e le inizializza con la configurazione moderna.
+ *
+ * Nota: questo file non contiene logica specifica per la major (le
+ * opzioni di init usate qui sono stabili tra TinyMCE 7 e 8); la scelta
+ * di quale major caricare avviene lato PHP (vedi class-mce-editor.php
+ * e class-mce-vendor.php), che determina l'URL CDN o il percorso locale
+ * passato a questo script.
  */
 ( function () {
 	'use strict';

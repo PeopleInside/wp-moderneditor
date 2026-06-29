@@ -4,23 +4,23 @@ Tags: tinymce, classic editor, gutenberg, dark mode, wysiwyg
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.2.3
+Stable tag: 1.3.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Disattiva Gutenberg e usa una versione moderna di TinyMCE (v7), caricata via CDN oppure offline, con supporto dark mode e toolbar configurabile.
+Disattiva Gutenberg e usa una versione moderna di TinyMCE (7 o 8, a scelta), caricata via CDN oppure offline, con supporto dark mode e toolbar configurabile.
 
 == Description ==
 
 Modern Classic Editor risolve due problemi comuni:
 
-1. **TinyMCE datato**: WordPress include internamente una versione di TinyMCE non aggiornata. Questo plugin la sostituisce con TinyMCE 7, caricato da CDN (jsDelivr) oppure interamente offline, sotto licenza GPL, senza bisogno di account o API key.
+1. **TinyMCE datato**: WordPress include internamente una versione di TinyMCE non aggiornata. Questo plugin la sostituisce con TinyMCE moderno (major 7 o 8, selezionabile dalle impostazioni), caricato da CDN (jsDelivr) oppure interamente offline, sotto licenza GPL, senza bisogno di account o API key.
 2. **Editor a blocchi non desiderato**: permette di disattivare Gutenberg per i tipi di contenuto che scegli (articoli, pagine, custom post type), ripristinando l'editor classico, senza interferire con il blocco nativo "Editor classico" quando lavori dentro Gutenberg.
 
 Funzionalità principali:
 
 * Toggle per disattivare Gutenberg, per singolo tipo di contenuto, senza rompere contenuti già pubblicati a blocchi
-* TinyMCE 7 moderno, caricato da CDN pubblico oppure interamente offline (file inclusi nel plugin o scaricabili dalle impostazioni)
+* TinyMCE moderno (7 o 8, a scelta), caricato da CDN pubblico oppure interamente offline (file inclusi nel plugin o scaricabili dalle impostazioni)
 * Controllo manuale o automatico di nuove versioni di TinyMCE, con download e installazione in un clic
 * Dark mode: automatica (segue il sistema), sempre chiara, o sempre scura
 * Tre preset di toolbar: standard, estesa, completa
@@ -57,7 +57,12 @@ Il plugin si integra con il meccanismo nativo di aggiornamento dei plugin di Wor
 
 == Changelog ==
 
-= 1.2.3 =
+= 1.3.0 =
+* Nuovo: è ora possibile scegliere tra TinyMCE 7 e TinyMCE 8 dalle impostazioni. Il bundle incluso nello zip del plugin contiene entrambe le major (7.9.3 e 8.6.0); il controllo/download di nuove versioni opera sulla major selezionata, senza mai proporre un salto automatico di major.
+* Nuovo: bottone "Elimina versione locale scaricata", visibile quando la sorgente è impostata su CDN ed esiste comunque una versione scaricata in precedenza per la major selezionata; elimina solo la copia in wp-content/uploads, il bundle incluso nel plugin resta sempre disponibile come fallback.
+* Le versioni locali scaricate per major diverse vengono mantenute in sottocartelle separate, così passare da 7 a 8 (e viceversa) non comporta la perdita dei download già effettuati.
+
+= 1.2.1 =
 * Nuovo: il plugin controlla ora le nuove versioni pubblicate sul repository GitHub ufficiale e si integra con il meccanismo nativo di aggiornamento dei plugin di WordPress (stessa interfaccia "Aggiornamento disponibile" e bottone "Aggiorna ora" dei plugin della directory ufficiale; compatibile con gli auto-update automatici dei plugin).
 * Fix: corretta la costante di versione interna del plugin, che non era allineata alla versione dichiarata nell'header e in questo changelog.
 

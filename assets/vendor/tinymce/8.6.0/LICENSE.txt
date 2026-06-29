@@ -1,0 +1,7 @@
+TinyMCE è distribuito sotto licenza GNU General Public License v2.0 o
+successiva (GPLv2+). Testo completo della licenza:
+https://www.gnu.org/licenses/old-licenses/gpl-2.0.html
+
+Copyright (c) Tiny Technologies, Inc.
+Vedi anche notices.txt in questa cartella per le librerie di terze
+parti incluse in TinyMCE (DOMPurify, Prism).

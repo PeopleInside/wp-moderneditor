@@ -1,7 +1,7 @@
 /**
- * Gestione AJAX dei bottoni "Controlla aggiornamenti" e
- * "Scarica e installa" nella pagina impostazioni del plugin,
- * per la sorgente locale (offline) di TinyMCE.
+ * Gestione AJAX dei bottoni "Controlla aggiornamenti", "Scarica e
+ * installa" ed "Elimina versione locale scaricata" nella pagina
+ * impostazioni del plugin, per la sorgente locale (offline) di TinyMCE.
  */
 ( function () {
 	'use strict';
@@ -10,9 +10,11 @@
 		var settings = window.mceVendorSettings || {};
 		var checkBtn    = document.getElementById( 'mce-check-update-btn' );
 		var downloadBtn = document.getElementById( 'mce-download-update-btn' );
+		var deleteBtn   = document.getElementById( 'mce-delete-local-btn' );
 		var spinner     = document.getElementById( 'mce-vendor-spinner' );
 		var messageEl   = document.getElementById( 'mce-vendor-message' );
 		var latestInfoEl = document.getElementById( 'mce-latest-version-info' );
+		var activeStatusTextEl = document.getElementById( 'mce-active-status-text' );
 		var activeVersionEl = document.getElementById( 'mce-active-version' );
 		var activeSourceEl  = document.getElementById( 'mce-active-source' );
 
@@ -21,10 +23,28 @@
 		}
 
 		var latestVersionFound = null;
+		var sourceRadios = document.querySelectorAll( 'input[name="mce_settings[editor_source]"]' );
+
+		function updateDeleteBtn() {
+			if ( ! deleteBtn ) {
+				return;
+			}
+			if ( settings.hasDownloaded ) {
+				deleteBtn.style.display = '';
+			} else {
+				deleteBtn.style.display = 'none';
+			}
+		}
+
+		// Visibilità iniziale e gestione dinamica del bottone
+		updateDeleteBtn();
 
 		function setBusy( isBusy ) {
 			checkBtn.disabled = isBusy;
 			downloadBtn.disabled = isBusy;
+			if ( deleteBtn ) {
+				deleteBtn.disabled = isBusy;
+			}
 			if ( spinner ) {
 				spinner.classList.toggle( 'is-active', isBusy );
 			}
@@ -36,6 +56,35 @@
 			}
 			messageEl.textContent = text || '';
 			messageEl.style.color = isError ? '#b32d2e' : '';
+		}
+
+		function updateActiveStatus( version, source ) {
+			if ( ! activeStatusTextEl ) {
+				return;
+			}
+			if ( 'none' === source || ! version ) {
+				activeStatusTextEl.textContent = 'Nessuna versione attualmente disponibile offline. L\'editor Classic userà automaticamente la CDN.';
+				activeVersionEl = null;
+				activeSourceEl = null;
+			} else {
+				var sourceLabel = 'bundled' === source ? 'incluse nel plugin' : ( activeSourceEl && activeSourceEl.dataset.downloadedLabel || 'scaricata' );
+				activeStatusTextEl.innerHTML = 'Versione attualmente disponibile offline: <strong id="mce-active-version">' + escapeHtml( version ) + '</strong> (<span id="mce-active-source" data-downloaded-label="scaricata">' + escapeHtml( sourceLabel ) + '</span>)';
+				// Re-bind elements since we recreated them
+				activeVersionEl = document.getElementById( 'mce-active-version' );
+				activeSourceEl = document.getElementById( 'mce-active-source' );
+			}
+		}
+
+		function escapeHtml( string ) {
+			return String( string ).replace( /[&<>"']/g, function ( s ) {
+				return {
+					'&': '&amp;',
+					'<': '&lt;',
+					'>': '&gt;',
+					'"': '&quot;',
+					"'": '&#39;'
+				}[ s ];
+			} );
 		}
 
 		function ajaxPost( action, extraParams ) {
@@ -108,16 +157,42 @@
 				if ( latestInfoEl ) {
 					latestInfoEl.textContent = '';
 				}
-				if ( activeVersionEl ) {
-					activeVersionEl.textContent = data.data.version;
-				}
-				if ( activeSourceEl ) {
-					activeSourceEl.textContent = activeSourceEl.dataset.downloadedLabel || activeSourceEl.textContent;
-				}
+				updateActiveStatus( data.data.version, 'downloaded' );
+				// Dopo un download riuscito esiste ora una versione locale scaricata
+				settings.hasDownloaded = true;
+				updateDeleteBtn();
 			} ).catch( function () {
 				setBusy( false );
 				setMessage( settings.i18n.genericError, true );
 			} );
 		} );
+
+		if ( deleteBtn ) {
+			deleteBtn.addEventListener( 'click', function () {
+				if ( ! window.confirm( settings.i18n.confirmDelete ) ) {
+					return;
+				}
+
+				setBusy( true );
+				setMessage( settings.i18n.deleting, false );
+
+				ajaxPost( 'mce_delete_tinymce' ).then( function ( data ) {
+					setBusy( false );
+
+					if ( ! data.success ) {
+						setMessage( ( data.data && data.data.message ) || settings.i18n.genericError, true );
+						return;
+					}
+
+					setMessage( data.data.message, false );
+					updateActiveStatus( data.data.active_version, data.data.active_source );
+					settings.hasDownloaded = ( 'none' !== data.data.active_source );
+					updateDeleteBtn();
+				} ).catch( function () {
+					setBusy( false );
+					setMessage( settings.i18n.genericError, true );
+				} );
+			} );
+		}
 	} );
 } )();

@@ -58,6 +58,7 @@ class MCE_Settings {
 			'toolbar_mode'               => 'extended', // 'standard' | 'extended' | 'full'
 			'enable_menubar'             => true,
 			'editor_source'              => 'cdn',  // 'cdn' (jsDelivr, sempre aggiornabile) | 'local' (offline, bundlata nel plugin o scaricata)
+			'tinymce_major'              => '7',  // '7' | '8'. Resta su 7 di default per non cambiare comportamento alle installazioni esistenti.
 			'auto_check_tinymce_updates' => false,  // Controllo periodico via wp-cron: disattivato finché l'utente non lo attiva esplicitamente.
 		);
 	}
@@ -127,7 +128,44 @@ class MCE_Settings {
 		$editor_source = isset( $input['editor_source'] ) ? sanitize_key( $input['editor_source'] ) : $defaults['editor_source'];
 		$output['editor_source'] = in_array( $editor_source, array( 'cdn', 'local' ), true ) ? $editor_source : $defaults['editor_source'];
 
+		$tinymce_major = isset( $input['tinymce_major'] ) ? sanitize_key( $input['tinymce_major'] ) : $defaults['tinymce_major'];
+		$output['tinymce_major'] = in_array( $tinymce_major, MCE_Vendor::SUPPORTED_MAJORS, true ) ? $tinymce_major : $defaults['tinymce_major'];
+
 		$output['auto_check_tinymce_updates'] = ! empty( $input['auto_check_tinymce_updates'] );
+
+		if ( 'local' === $output['editor_source'] ) {
+			$vendor = MCE_Vendor::instance();
+			$major  = $output['tinymce_major'];
+			if ( null === $vendor->get_downloaded_version( $major ) ) {
+				$latest = $vendor->fetch_latest_version( $major );
+				if ( is_wp_error( $latest ) ) {
+					add_settings_error(
+						self::OPTION_KEY,
+						'mce_download_failed',
+						sprintf(
+							/* translators: %s: messaggio di errore */
+							__( 'Impossibile controllare l\'ultima versione per il download automatico: %s. Verrà usato il bundle locale predefinito.', 'modern-classic-editor' ),
+							$latest->get_error_message()
+						),
+						'warning'
+					);
+				} elseif ( ! empty( $latest['version'] ) ) {
+					$download = $vendor->download_version( $latest['version'], $major );
+					if ( is_wp_error( $download ) ) {
+						add_settings_error(
+							self::OPTION_KEY,
+							'mce_download_failed',
+							sprintf(
+								/* translators: %s: messaggio di errore */
+								__( 'Download automatico dell\'editor fallito: %s. Verrà usato il bundle locale predefinito.', 'modern-classic-editor' ),
+								$download->get_error_message()
+							),
+							'warning'
+						);
+					}
+				}
+			}
+		}
 
 		return $output;
 	}
@@ -169,8 +207,10 @@ class MCE_Settings {
 			true
 		);
 
-		$vendor = MCE_Vendor::instance();
-		$active = $vendor->get_active_local_version();
+		$vendor  = MCE_Vendor::instance();
+		$settings = self::get();
+		$active  = $vendor->get_active_local_version();
+		$downloaded = $vendor->get_downloaded_version();
 
 		wp_localize_script(
 			'mce-admin-vendor',
@@ -180,13 +220,21 @@ class MCE_Settings {
 				'nonce'          => wp_create_nonce( 'mce_vendor_action' ),
 				'activeVersion'  => $active['version'],
 				'activeSource'   => $active['source'],
-				'lastKnownLatest' => get_option( 'mce_tinymce_latest_known_version', array() ),
+				'editorSource'   => $settings['editor_source'],
+				'hasDownloaded'  => ( 'none' !== $active['source'] ),
+				// Bottone "Elimina versione locale": mostrato solo quando la
+				// sorgente locale o inclusa nel plugin esiste, per permettere
+				// la pulizia dello spazio.
+				'showDeleteButton' => ( 'none' !== $active['source'] ),
+				'lastKnownLatest' => get_option( 'mce_tinymce_latest_known_version_' . $settings['tinymce_major'], array() ),
 				'i18n'           => array(
 					'checking'       => __( 'Controllo in corso…', 'modern-classic-editor' ),
 					'downloading'    => __( 'Download in corso, potrebbe richiedere qualche secondo…', 'modern-classic-editor' ),
+					'deleting'       => __( 'Eliminazione in corso…', 'modern-classic-editor' ),
 					'upToDate'       => __( 'Stai già usando l\'ultima versione disponibile.', 'modern-classic-editor' ),
 					'updateAvailable' => __( 'È disponibile una nuova versione: ', 'modern-classic-editor' ),
 					'genericError'   => __( 'Si è verificato un errore. Riprova.', 'modern-classic-editor' ),
+					'confirmDelete'  => __( 'Eliminare i file dell\'editor offline? Se confermi, verrà usata la CDN fino al prossimo download manuale.', 'modern-classic-editor' ),
 				),
 			)
 		);
@@ -203,7 +251,7 @@ class MCE_Settings {
 		?>
 		<div class="wrap mce-settings-wrap">
 			<h1><?php esc_html_e( 'Modern Classic Editor', 'modern-classic-editor' ); ?></h1>
-			<p><?php esc_html_e( 'Configura l\'editor classico moderno (TinyMCE 7) e la disattivazione di Gutenberg.', 'modern-classic-editor' ); ?></p>
+			<p><?php esc_html_e( 'Configura l\'editor classico moderno (TinyMCE) e la disattivazione di Gutenberg.', 'modern-classic-editor' ); ?></p>
 
 			<form method="post" action="options.php">
 				<?php settings_fields( 'mce_settings_group' ); ?>
@@ -240,6 +288,28 @@ class MCE_Settings {
 					</tr>
 				</table>
 
+				<h2 class="title"><?php esc_html_e( 'Versione di TinyMCE', 'modern-classic-editor' ); ?></h2>
+				<table class="form-table" role="presentation">
+					<tr>
+						<th scope="row"><?php esc_html_e( 'Major', 'modern-classic-editor' ); ?></th>
+						<td>
+							<fieldset>
+								<label style="display:block;margin-bottom:6px;">
+									<input type="radio" name="<?php echo esc_attr( self::OPTION_KEY ); ?>[tinymce_major]" value="7" <?php checked( $settings['tinymce_major'], '7' ); ?> />
+									<?php esc_html_e( 'TinyMCE 7 (consigliata per compatibilità con configurazioni e plugin di terze parti esistenti)', 'modern-classic-editor' ); ?>
+								</label>
+								<label style="display:block;">
+									<input type="radio" name="<?php echo esc_attr( self::OPTION_KEY ); ?>[tinymce_major]" value="8" <?php checked( $settings['tinymce_major'], '8' ); ?> />
+									<?php esc_html_e( 'TinyMCE 8 (più recente; verifica gli embed e i contenuti incollati dopo il passaggio, la sanitizzazione interna è più stringente)', 'modern-classic-editor' ); ?>
+								</label>
+								<p class="description">
+									<?php esc_html_e( 'Le versioni locali scaricate per ciascuna major restano salvate separatamente: puoi passare da 7 a 8 e viceversa senza perdere i download già effettuati. La licenza GPL (uso gratuito) si applica a entrambe le major.', 'modern-classic-editor' ); ?>
+								</p>
+							</fieldset>
+						</td>
+					</tr>
+				</table>
+
 				<h2 class="title"><?php esc_html_e( 'Sorgente dell\'editor TinyMCE', 'modern-classic-editor' ); ?></h2>
 				<table class="form-table" role="presentation">
 					<tr>
@@ -264,14 +334,18 @@ class MCE_Settings {
 
 				<div id="mce-vendor-status" class="mce-vendor-status">
 					<h3><?php esc_html_e( 'Versione locale disponibile', 'modern-classic-editor' ); ?></h3>
-					<p>
+					<p id="mce-active-status-text">
 						<?php
-						printf(
-							/* translators: 1: numero di versione, 2: origine (bundlata col plugin / scaricata) */
-							esc_html__( 'Versione attualmente disponibile offline: %1$s (%2$s)', 'modern-classic-editor' ),
-							'<strong id="mce-active-version">' . esc_html( $active_local['version'] ) . '</strong>',
-							'<span id="mce-active-source" data-downloaded-label="' . esc_attr__( 'scaricata', 'modern-classic-editor' ) . '">' . esc_html( 'bundled' === $active_local['source'] ? __( 'incluse nel plugin', 'modern-classic-editor' ) : __( 'scaricata', 'modern-classic-editor' ) ) . '</span>'
-						);
+						if ( 'none' === $active_local['source'] ) {
+							esc_html_e( 'Nessuna versione attualmente disponibile offline. L\'editor Classic userà automaticamente la CDN.', 'modern-classic-editor' );
+						} else {
+							printf(
+								/* translators: 1: numero di versione, 2: origine (bundlata col plugin / scaricata) */
+								esc_html__( 'Versione attualmente disponibile offline: %1$s (%2$s)', 'modern-classic-editor' ),
+								'<strong id="mce-active-version">' . esc_html( $active_local['version'] ) . '</strong>',
+								'<span id="mce-active-source" data-downloaded-label="' . esc_attr__( 'scaricata', 'modern-classic-editor' ) . '">' . esc_html( 'bundled' === $active_local['source'] ? __( 'incluse nel plugin', 'modern-classic-editor' ) : __( 'scaricata', 'modern-classic-editor' ) ) . '</span>'
+							);
+						}
 						?>
 					</p>
 					<p id="mce-latest-version-info" class="description"></p>
@@ -281,6 +355,9 @@ class MCE_Settings {
 						</button>
 						<button type="button" class="button button-primary" id="mce-download-update-btn" style="display:none;">
 							<?php esc_html_e( 'Scarica e installa l\'ultima versione', 'modern-classic-editor' ); ?>
+						</button>
+						<button type="button" class="button button-link-delete" id="mce-delete-local-btn" style="display:none;">
+							<?php esc_html_e( 'Elimina versione locale scaricata', 'modern-classic-editor' ); ?>
 						</button>
 						<span id="mce-vendor-spinner" class="spinner" style="float:none;"></span>
 					</p>

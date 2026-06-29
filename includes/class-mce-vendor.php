@@ -45,12 +45,28 @@ class MCE_Vendor {
 	const CRON_HOOK     = 'mce_check_tinymce_update';
 	const AJAX_DOWNLOAD = 'mce_download_tinymce';
 	const AJAX_CHECK    = 'mce_check_tinymce_version';
+	const AJAX_DELETE   = 'mce_delete_tinymce';
 
 	/**
-	 * Versione bundlata direttamente nello zip del plugin (sempre
-	 * disponibile, anche offline al 100%, senza alcuna richiesta di rete).
+	 * Major version supportate dal plugin, con la versione bundlata
+	 * direttamente nello zip per ciascuna (sempre disponibile, anche
+	 * offline al 100%, senza alcuna richiesta di rete). L'utente sc-
+	 * eglie la major dalle impostazioni (vedi MCE_Settings::get(),
+	 * chiave 'tinymce_major'); per ciascuna major si può poi controllare
+	 * e scaricare la versione più recente esattamente come oggi.
 	 */
-	const BUNDLED_VERSION = '7.9.3';
+	const BUNDLED_VERSIONS = array(
+		'7' => '7.9.3',
+		'8' => '8.6.0',
+	);
+
+	/**
+	 * Major supportate, usata per validare l'input utente e per i
+	 * confronti di compatibilità (una versione scaricata per la major
+	 * "7" non viene mai considerata valida per la major "8", e viceversa,
+	 * anche se entrambe coesistono in cartelle separate in uploads).
+	 */
+	const SUPPORTED_MAJORS = array( '7', '8' );
 
 	/**
 	 * npm e jsDelivr servono gli stessi file: usiamo jsDelivr come CDN
@@ -106,6 +122,7 @@ class MCE_Vendor {
 	private function __construct() {
 		add_action( 'wp_ajax_' . self::AJAX_DOWNLOAD, array( $this, 'ajax_download_version' ) );
 		add_action( 'wp_ajax_' . self::AJAX_CHECK, array( $this, 'ajax_check_latest_version' ) );
+		add_action( 'wp_ajax_' . self::AJAX_DELETE, array( $this, 'ajax_delete_downloaded_version' ) );
 
 		add_action( self::CRON_HOOK, array( $this, 'cron_check_for_update' ) );
 		add_action( 'update_option_' . MCE_Settings::OPTION_KEY, array( $this, 'sync_cron_schedule' ), 10, 2 );
@@ -114,60 +131,105 @@ class MCE_Vendor {
 	}
 
 	/**
-	 * Cartella in uploads dove vengono salvate le versioni di TinyMCE
-	 * scaricate dall'utente (fuori dalla cartella del plugin, così
-	 * sopravvivono agli aggiornamenti/reinstallazioni del plugin stesso).
+	 * Normalizza una major a uno dei valori supportati ('7' o '8'),
+	 * ricadendo sulla major selezionata nelle impostazioni se non
+	 * specificata, e sulla prima major supportata in caso di valore
+	 * non valido (difesa in profondità: le impostazioni sanificano già
+	 * questo valore, ma ogni metodo pubblico lo rivalida comunque).
 	 */
-	public function get_uploads_dir(): string {
-		$uploads = wp_upload_dir();
-		return trailingslashit( $uploads['basedir'] ) . 'modern-classic-editor/tinymce/';
-	}
-
-	public function get_uploads_url(): string {
-		$uploads = wp_upload_dir();
-		return trailingslashit( $uploads['baseurl'] ) . 'modern-classic-editor/tinymce/';
+	private function normalize_major( ?string $major = null ): string {
+		if ( null === $major ) {
+			$major = (string) MCE_Settings::get_option( 'tinymce_major' );
+		}
+		return in_array( $major, self::SUPPORTED_MAJORS, true ) ? $major : self::SUPPORTED_MAJORS[0];
 	}
 
 	/**
-	 * Percorso del bundle incluso direttamente nello zip del plugin.
+	 * Cartella in uploads dove vengono salvate le versioni di TinyMCE
+	 * scaricate dall'utente (fuori dalla cartella del plugin, così
+	 * sopravvivono agli aggiornamenti/reinstallazioni del plugin stesso),
+	 * separata per major: una versione 8.x scaricata non va mai confusa
+	 * con una 7.x scaricata in precedenza, anche se l'utente passa
+	 * avanti e indietro tra le due dalle impostazioni.
 	 */
-	private function get_bundled_dir(): string {
-		return MCE_PLUGIN_DIR . 'assets/vendor/tinymce/' . self::BUNDLED_VERSION . '/';
+	public function get_uploads_dir( ?string $major = null ): string {
+		$uploads = wp_upload_dir();
+		return trailingslashit( $uploads['basedir'] ) . 'modern-classic-editor/tinymce/' . $this->normalize_major( $major ) . '/';
+	}
+
+	public function get_uploads_url( ?string $major = null ): string {
+		$uploads = wp_upload_dir();
+		return trailingslashit( $uploads['baseurl'] ) . 'modern-classic-editor/tinymce/' . $this->normalize_major( $major ) . '/';
+	}
+
+	/**
+	 * Versione bundlata nello zip del plugin per la major indicata.
+	 */
+	public function get_bundled_version( ?string $major = null ): string {
+		$major = $this->normalize_major( $major );
+		return self::BUNDLED_VERSIONS[ $major ];
+	}
+
+	/**
+	 * Percorso del bundle incluso direttamente nello zip del plugin,
+	 * per la major indicata.
+	 */
+	private function get_bundled_dir( ?string $major = null ): string {
+		return MCE_PLUGIN_DIR . 'assets/vendor/tinymce/' . $this->get_bundled_version( $major ) . '/';
 	}
 
 	/**
 	 * Versione locale attualmente disponibile per l'uso (la più recente
 	 * tra quella bundlata nel plugin e quella eventualmente scaricata
-	 * dall'utente in uploads), con percorso/URL di base.
+	 * dall'utente in uploads, per la major selezionata), con percorso/URL
+	 * di base.
 	 *
 	 * @return array{version: string, dir: string, url: string, source: string}
 	 */
-	public function get_active_local_version(): array {
-		$downloaded = $this->get_downloaded_version();
+	public function get_active_local_version( ?string $major = null ): array {
+		$major      = $this->normalize_major( $major );
+		$bundled    = $this->get_bundled_version( $major );
+		$downloaded = $this->get_downloaded_version( $major );
 
-		if ( $downloaded && version_compare( $downloaded, self::BUNDLED_VERSION, '>' ) ) {
+		$bundled_dir = $this->get_bundled_dir( $major );
+		$has_bundled = $this->is_version_complete( $bundled_dir );
+
+		if ( $downloaded && $this->is_version_complete( $this->get_uploads_dir( $major ) . $downloaded . '/' ) ) {
+			if ( ! $has_bundled || version_compare( $downloaded, $bundled, '>' ) ) {
+				return array(
+					'version' => $downloaded,
+					'dir'     => $this->get_uploads_dir( $major ) . $downloaded . '/',
+					'url'     => $this->get_uploads_url( $major ) . $downloaded . '/',
+					'source'  => 'downloaded',
+				);
+			}
+		}
+
+		if ( $has_bundled ) {
 			return array(
-				'version' => $downloaded,
-				'dir'     => $this->get_uploads_dir() . $downloaded . '/',
-				'url'     => $this->get_uploads_url() . $downloaded . '/',
-				'source'  => 'downloaded',
+				'version' => $bundled,
+				'dir'     => $bundled_dir,
+				'url'     => MCE_PLUGIN_URL . 'assets/vendor/tinymce/' . $bundled . '/',
+				'source'  => 'bundled',
 			);
 		}
 
 		return array(
-			'version' => self::BUNDLED_VERSION,
-			'dir'     => $this->get_bundled_dir(),
-			'url'     => MCE_PLUGIN_URL . 'assets/vendor/tinymce/' . self::BUNDLED_VERSION . '/',
-			'source'  => 'bundled',
+			'version' => '',
+			'dir'     => '',
+			'url'     => '',
+			'source'  => 'none',
 		);
 	}
 
 	/**
-	 * Legge la versione scaricata dall'utente, se presente e completa
-	 * (verifica la presenza del file core, non solo della cartella).
+	 * Legge la versione scaricata dall'utente per la major indicata, se
+	 * presente e completa (verifica la presenza del file core, non solo
+	 * della cartella).
 	 */
-	public function get_downloaded_version(): ?string {
-		$marker = $this->get_uploads_dir() . 'current-version.json';
+	public function get_downloaded_version( ?string $major = null ): ?string {
+		$major  = $this->normalize_major( $major );
+		$marker = $this->get_uploads_dir( $major ) . 'current-version.json';
 		if ( ! file_exists( $marker ) ) {
 			return null;
 		}
@@ -178,9 +240,110 @@ class MCE_Vendor {
 		}
 
 		$version  = (string) $data['version'];
-		$core_file = $this->get_uploads_dir() . $version . '/tinymce.min.js';
+
+		// Difesa in profondità: una versione scaricata per major "7" non
+		// deve mai essere accettata come valida per major "8" (e viceversa),
+		// anche se per qualche motivo il marker risultasse incoerente con
+		// la cartella in cui si trova.
+		if ( 0 !== strpos( $version, $major . '.' ) ) {
+			return null;
+		}
+
+		$core_file = $this->get_uploads_dir( $major ) . $version . '/tinymce.min.js';
 
 		return file_exists( $core_file ) ? $version : null;
+	}
+
+	/**
+	 * Elimina la versione scaricata dall'utente per la major indicata
+	 * (cartella della versione + marker current-version.json), lasciando
+	 * intatto il bundle incluso nel plugin, che resta sempre disponibile
+	 * come fallback. Operazione esplicita, su richiesta dell'amministratore
+	 * dalla pagina impostazioni: non viene mai eseguita automaticamente.
+	 *
+	 * @return true|WP_Error
+	 */
+	public function delete_downloaded_version( ?string $major = null ) {
+		$major      = $this->normalize_major( $major );
+		$downloaded = $this->get_downloaded_version( $major );
+
+		if ( ! function_exists( 'WP_Filesystem' ) ) {
+			require_once ABSPATH . 'wp-admin/includes/file.php';
+		}
+
+		global $wp_filesystem;
+		$use_wp_filesystem = false;
+		if ( empty( $wp_filesystem ) ) {
+			if ( WP_Filesystem() && isset( $wp_filesystem ) && 'direct' === $wp_filesystem->method ) {
+				$use_wp_filesystem = true;
+			}
+		} elseif ( 'direct' === $wp_filesystem->method ) {
+			$use_wp_filesystem = true;
+		}
+
+		if ( $downloaded ) {
+			$version_dir = $this->get_uploads_dir( $major ) . $downloaded . '/';
+			$marker      = $this->get_uploads_dir( $major ) . 'current-version.json';
+
+			$deleted = $use_wp_filesystem
+				? $wp_filesystem->delete( $version_dir, true )
+				: $this->rmdir_recursive( $version_dir );
+
+			if ( ! $deleted ) {
+				return new WP_Error( 'mce_delete_failed', __( 'Impossibile eliminare la cartella della versione locale scaricata.', 'modern-classic-editor' ) );
+			}
+
+			if ( file_exists( $marker ) ) {
+				wp_delete_file( $marker );
+			}
+
+			return true;
+		}
+
+		// Se non c'è una versione scaricata, proviamo ad eliminare i file inclusi nel plugin
+		$bundled_dir = $this->get_bundled_dir( $major );
+		if ( $this->is_version_complete( $bundled_dir ) ) {
+			$deleted = $use_wp_filesystem
+				? $wp_filesystem->delete( $bundled_dir, true )
+				: $this->rmdir_recursive( $bundled_dir );
+
+			if ( ! $deleted ) {
+				return new WP_Error( 'mce_delete_failed', __( 'Impossibile eliminare i file dell\'editor inclusi nel plugin.', 'modern-classic-editor' ) );
+			}
+
+			return true;
+		}
+
+		return new WP_Error( 'mce_no_downloaded_version', __( 'Nessuna versione locale o inclusa nel plugin trovata da eliminare per questa major.', 'modern-classic-editor' ) );
+	}
+
+	/**
+	 * Rimozione recursiva di una cartella, usata come fallback quando
+	 * WP_Filesystem non è disponibile in modalità "direct" (stesso
+	 * fallback nativo già usato da download_version() per il rename).
+	 */
+	private function rmdir_recursive( string $dir ): bool {
+		if ( ! is_dir( $dir ) ) {
+			return true;
+		}
+		$items = scandir( $dir );
+		if ( false === $items ) {
+			return false;
+		}
+		foreach ( $items as $item ) {
+			if ( '.' === $item || '..' === $item ) {
+				continue;
+			}
+			$path = trailingslashit( $dir ) . $item;
+			if ( is_dir( $path ) ) {
+				if ( ! $this->rmdir_recursive( $path ) ) {
+					return false;
+				}
+			} else {
+				wp_delete_file( $path );
+			}
+		}
+		return @rmdir( $dir ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
 	}
 
 	/**
@@ -197,19 +360,24 @@ class MCE_Vendor {
 	}
 
 	/**
-	 * Interroga il registro npm per l'elenco delle versioni 7.x
-	 * disponibili e restituisce la più recente. npm e jsDelivr
-	 * pubblicano gli stessi pacchetti, quindi qualunque versione
-	 * trovata qui è scaricabile da jsDelivr.
+	 * Interroga il registro npm per l'elenco delle versioni stabili
+	 * disponibili per la major indicata e restituisce la più recente.
+	 * npm e jsDelivr pubblicano gli stessi pacchetti, quindi qualunque
+	 * versione trovata qui è scaricabile da jsDelivr.
 	 *
-	 * Resta sulla major 7 (quella per cui il plugin è scritto):
-	 * TinyMCE 8 introduce breaking changes (license key obbligatoria
-	 * in un formato diverso, struttura DOM dei toolbar button cambiata)
-	 * che richiederebbero un adeguamento del codice JS del plugin.
+	 * Resta sulla major richiesta (non propone mai un salto di major
+	 * automatico): il passaggio da una major all'altra è una scelta
+	 * esplicita dell'amministratore dalle impostazioni, perché major
+	 * diverse di TinyMCE possono introdurre breaking changes (es. il
+	 * passaggio da 7 a 8 ha cambiato il sistema di chiavi di licenza per
+	 * gli utilizzi commerciali e la struttura DOM di alcuni componenti
+	 * della toolbar).
 	 *
 	 * @return array{version: string, checked_at: string}|WP_Error
 	 */
-	public function fetch_latest_version() {
+	public function fetch_latest_version( ?string $major = null ) {
+		$major = $this->normalize_major( $major );
+
 		$response = wp_remote_get(
 			self::NPM_REGISTRY_URL,
 			array(
@@ -239,16 +407,24 @@ class MCE_Vendor {
 			return new WP_Error( 'mce_npm_bad_response', __( 'Risposta del registro npm non valida.', 'modern-classic-editor' ) );
 		}
 
-		$candidates = array();
+		$candidates    = array();
+		$major_pattern = '/^' . preg_quote( $major, '/' ) . '\.\d+\.\d+$/';
 		foreach ( array_keys( $body['versions'] ) as $version ) {
-			// Solo versioni stabili della major 7 (niente alpha/beta/rc, niente major 8+).
-			if ( preg_match( '/^7\.\d+\.\d+$/', $version ) ) {
+			// Solo versioni stabili della major richiesta (niente alpha/beta/rc, niente altre major).
+			if ( preg_match( $major_pattern, $version ) ) {
 				$candidates[] = $version;
 			}
 		}
 
 		if ( empty( $candidates ) ) {
-			return new WP_Error( 'mce_npm_no_candidates', __( 'Nessuna versione 7.x trovata su npm.', 'modern-classic-editor' ) );
+			return new WP_Error(
+				'mce_npm_no_candidates',
+				sprintf(
+					/* translators: %s: numero di major (es. "7" o "8") */
+					__( 'Nessuna versione %s.x trovata su npm.', 'modern-classic-editor' ),
+					$major
+				)
+			);
 		}
 
 		usort( $candidates, 'version_compare' );
@@ -259,19 +435,32 @@ class MCE_Vendor {
 			'checked_at' => current_time( 'mysql' ),
 		);
 
-		update_option( 'mce_tinymce_latest_known_version', $result, false );
+		update_option( 'mce_tinymce_latest_known_version_' . $major, $result, false );
 
 		return $result;
 	}
 
 	/**
 	 * Scarica e installa in uploads una versione di TinyMCE da jsDelivr,
-	 * prendendo solo i file minificati elencati in REQUIRED_FILES.
+	 * prendendo solo i file minificati elencati in REQUIRED_FILES, nella
+	 * sottocartella della major indicata.
+	 *
+	 * Sicurezza: $version è validata con una regex stringente ancorata
+	 * alla major richiesta (es. "8.6.0" è valido solo se $major è "8"):
+	 * è l'unica barriera che impedisce path traversal o SSRF tramite
+	 * questo parametro, quindi va mantenuta rigorosa anche in futuro.
+	 * $major, a differenza di $version, non proviene mai direttamente
+	 * dall'input utente in questo metodo: i chiamanti AJAX la ricavano
+	 * sempre da MCE_Settings (vedi ajax_download_version()), mai da un
+	 * valore POST arbitrario.
 	 *
 	 * @return true|WP_Error
 	 */
-	public function download_version( string $version ) {
-		if ( ! preg_match( '/^7\.\d+\.\d+$/', $version ) ) {
+	public function download_version( string $version, ?string $major = null ) {
+		$major = $this->normalize_major( $major );
+
+		$pattern = '/^' . preg_quote( $major, '/' ) . '\.\d+\.\d+$/';
+		if ( ! preg_match( $pattern, $version ) ) {
 			return new WP_Error( 'mce_invalid_version', __( 'Numero di versione non valido.', 'modern-classic-editor' ) );
 		}
 
@@ -279,7 +468,7 @@ class MCE_Vendor {
 			require_once ABSPATH . 'wp-admin/includes/file.php';
 		}
 
-		$target_dir = $this->get_uploads_dir() . $version . '/';
+		$target_dir = $this->get_uploads_dir( $major ) . $version . '/';
 		wp_mkdir_p( $target_dir );
 
 		// WP_Filesystem() può richiedere credenziali FTP in alcuni setup
@@ -365,7 +554,7 @@ class MCE_Vendor {
 		}
 
 		file_put_contents( // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
-			$this->get_uploads_dir() . 'current-version.json',
+			$this->get_uploads_dir( $major ) . 'current-version.json',
 			wp_json_encode(
 				array(
 					'version'       => $version,
@@ -380,6 +569,11 @@ class MCE_Vendor {
 	/**
 	 * Endpoint AJAX: download manuale dichiarato dall'amministratore
 	 * dalla pagina impostazioni (bottone "Aggiorna ora").
+	 *
+	 * La major non viene letta dal payload POST: si usa sempre quella
+	 * attualmente selezionata nelle impostazioni salvate, per evitare che
+	 * una richiesta AJAX possa forzare il download di una major diversa
+	 * da quella scelta dall'amministratore nell'interfaccia.
 	 */
 	public function ajax_download_version(): void {
 		check_ajax_referer( 'mce_vendor_action', 'nonce' );
@@ -393,7 +587,8 @@ class MCE_Vendor {
 			wp_send_json_error( array( 'message' => __( 'Versione non specificata.', 'modern-classic-editor' ) ), 400 );
 		}
 
-		$result = $this->download_version( $version );
+		$major  = $this->normalize_major();
+		$result = $this->download_version( $version, $major );
 
 		if ( is_wp_error( $result ) ) {
 			wp_send_json_error( array( 'message' => $result->get_error_message() ), 500 );
@@ -413,7 +608,8 @@ class MCE_Vendor {
 
 	/**
 	 * Endpoint AJAX: controllo manuale dell'ultima versione disponibile
-	 * (bottone "Controlla aggiornamenti").
+	 * (bottone "Controlla aggiornamenti"), per la major attualmente
+	 * selezionata nelle impostazioni.
 	 */
 	public function ajax_check_latest_version(): void {
 		check_ajax_referer( 'mce_vendor_action', 'nonce' );
@@ -422,13 +618,14 @@ class MCE_Vendor {
 			wp_send_json_error( array( 'message' => __( 'Permessi insufficienti.', 'modern-classic-editor' ) ), 403 );
 		}
 
-		$result = $this->fetch_latest_version();
+		$major  = $this->normalize_major();
+		$result = $this->fetch_latest_version( $major );
 
 		if ( is_wp_error( $result ) ) {
 			wp_send_json_error( array( 'message' => $result->get_error_message() ), 500 );
 		}
 
-		$active = $this->get_active_local_version();
+		$active = $this->get_active_local_version( $major );
 
 		wp_send_json_success(
 			array(
@@ -440,11 +637,52 @@ class MCE_Vendor {
 	}
 
 	/**
+	 * Endpoint AJAX: elimina la versione locale scaricata dall'utente per
+	 * la major attualmente selezionata nelle impostazioni, lasciando
+	 * intatto il bundle incluso nel plugin. Pensato per l'uso da sorgente
+	 * "CDN" quando esiste comunque una versione scaricata in precedenza
+	 * (es. dopo un cambio di sorgente da locale a CDN) e l'amministratore
+	 * vuole liberare spazio su disco, ma resta utilizzabile in generale:
+	 * il bundle del plugin è sempre disponibile come fallback.
+	 */
+	public function ajax_delete_downloaded_version(): void {
+		check_ajax_referer( 'mce_vendor_action', 'nonce' );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Permessi insufficienti.', 'modern-classic-editor' ) ), 403 );
+		}
+
+		$major  = $this->normalize_major();
+		$result = $this->delete_downloaded_version( $major );
+
+		if ( is_wp_error( $result ) ) {
+			wp_send_json_error( array( 'message' => $result->get_error_message() ), 500 );
+		}
+
+		$active = $this->get_active_local_version( $major );
+
+		if ( 'none' === $active['source'] ) {
+			$message = __( 'Tutti i file dell\'editor offline per questa major sono stati eliminati. L\'editor Classic userà automaticamente la CDN.', 'modern-classic-editor' );
+		} else {
+			$message = __( 'Versione locale scaricata eliminata. Verrà nuovamente usato il bundle incluso nel plugin.', 'modern-classic-editor' );
+		}
+
+		wp_send_json_success(
+			array(
+				'message'        => $message,
+				'active_version' => $active['version'],
+				'active_source'  => $active['source'],
+			)
+		);
+	}
+
+	/**
 	 * Controllo automatico via wp-cron, eseguito solo se l'utente ha
 	 * attivato esplicitamente l'opzione corrispondente nelle impostazioni
 	 * (nessuna richiesta di rete in background senza consenso esplicito).
 	 * Se trova una versione più recente, la scarica e installa da solo,
-	 * così l'utente la trova già pronta al prossimo accesso.
+	 * così l'utente la trova già pronta al prossimo accesso. Opera sempre
+	 * sulla major attualmente selezionata nelle impostazioni.
 	 */
 	public function cron_check_for_update(): void {
 		$settings = MCE_Settings::get();
@@ -452,14 +690,15 @@ class MCE_Vendor {
 			return;
 		}
 
-		$result = $this->fetch_latest_version();
+		$major  = $this->normalize_major();
+		$result = $this->fetch_latest_version( $major );
 		if ( is_wp_error( $result ) ) {
 			return;
 		}
 
-		$active = $this->get_active_local_version();
+		$active = $this->get_active_local_version( $major );
 		if ( version_compare( $result['version'], $active['version'], '>' ) ) {
-			$this->download_version( $result['version'] );
+			$this->download_version( $result['version'], $major );
 		}
 	}
 

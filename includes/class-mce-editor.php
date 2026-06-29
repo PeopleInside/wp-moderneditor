@@ -34,15 +34,34 @@ class MCE_Editor {
 
 	/**
 	 * jsDelivr: CDN pubblico, gratuito, senza limiti di caricamenti/account,
-	 * a differenza di cdn.tiny.cloud che richiede una API key per uso continuativo.
+	 * a differenza di cdn.tiny.cloud che richiede una API key per uso
+	 * continuativo. L'URL dipende dalla major scelta nelle impostazioni
+	 * (vedi MCE_Settings, chiave 'tinymce_major'): jsDelivr risolve
+	 * "tinymce@7" o "tinymce@8" sempre all'ultima versione stabile
+	 * pubblicata per quella major (range npm), quindi resta sempre
+	 * aggiornato senza bisogno di specificare una patch version.
 	 */
-	const CDN_BASE = 'https://cdn.jsdelivr.net/npm/tinymce@' . MCE_TINYMCE_CDN_VERSION . '/tinymce.min.js';
+	private function cdn_base_script_url(): string {
+		return 'https://cdn.jsdelivr.net/npm/tinymce@' . $this->current_major() . '/tinymce.min.js';
+	}
 
 	/**
 	 * Root della stessa versione CDN, senza il file finale, usata come
 	 * base_url per la risoluzione di temi/skin/icone/plugin lato JS.
 	 */
-	const JSDELIVR_BASE_URL = 'https://cdn.jsdelivr.net/npm/tinymce@' . MCE_TINYMCE_CDN_VERSION;
+	private function cdn_base_url(): string {
+		return 'https://cdn.jsdelivr.net/npm/tinymce@' . $this->current_major();
+	}
+
+	/**
+	 * Major TinyMCE attualmente selezionata nelle impostazioni del plugin
+	 * ('7' o '8'), con fallback sicuro su '7' per qualunque valore non
+	 * riconosciuto (stessa validazione applicata in MCE_Vendor).
+	 */
+	private function current_major(): string {
+		$major = (string) MCE_Settings::get_option( 'tinymce_major' );
+		return in_array( $major, array( '7', '8' ), true ) ? $major : '7';
+	}
 
 	public static function instance(): MCE_Editor {
 		if ( null === self::$instance ) {
@@ -198,8 +217,8 @@ class MCE_Editor {
 		$use_local   = 'local' === $settings['editor_source'];
 		$vendor      = MCE_Vendor::instance();
 		$local_info  = $vendor->get_active_local_version();
-		$source_url  = self::CDN_BASE;
-		$base_url    = self::JSDELIVR_BASE_URL;
+		$source_url  = $this->cdn_base_script_url();
+		$base_url    = $this->cdn_base_url();
 
 		if ( $use_local ) {
 			if ( $vendor->is_version_complete( $local_info['dir'] ) ) {
