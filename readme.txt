@@ -4,7 +4,7 @@ Tags: tinymce, classic editor, gutenberg, dark mode, wysiwyg
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.3.0
+Stable tag: 1.3.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -56,6 +56,11 @@ No. Il controllo automatico giornaliero è disattivato di default: va attivato e
 Il plugin si integra con il meccanismo nativo di aggiornamento dei plugin di WordPress: se è pubblicata una nuova release sul repository GitHub ufficiale (github.com/PeopleInside/wp-moderneditor), comparirà nella pagina Plugin con lo stesso avviso "Aggiornamento disponibile" e lo stesso bottone "Aggiorna ora" usati per i plugin della directory ufficiale di WordPress.org, ed è compatibile con gli aggiornamenti automatici dei plugin se li attivi dalla stessa pagina. Il controllo avviene in background, in HTTPS, al massimo ogni 12 ore (la stessa cadenza che WordPress usa già per tutti i plugin installati).
 
 == Changelog ==
+
+= 1.3.1 =
+* Fix: localizzazione dell'editor basata sulla lingua impostata in WordPress (es. italiano `it_IT` -> `it`), con pacchetto lingua nativo TinyMCE incluso.
+* Fix: disattivato il sottomenu contestuale personalizzato di TinyMCE (`contextmenu: false`), ripristinando il menu nativo del browser al click destro nell'area di testo.
+* Fix: attivato il controllo ortografico nativo del browser (`browser_spellcheck: true`), consentendo al browser di evidenziare gli errori di ortografia ed esporre le correzioni nel menu contestuale.
 
 = 1.3.0 =
 * Nuovo: è ora possibile scegliere tra TinyMCE 7 e TinyMCE 8 dalle impostazioni. Il bundle incluso nello zip del plugin contiene entrambe le major (7.9.3 e 8.6.0); il controllo/download di nuove versioni opera sulla major selezionata, senza mai proporre un salto automatico di major.

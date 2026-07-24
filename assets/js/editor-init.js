@@ -74,6 +74,10 @@
 			license_key: 'gpl',
 			target: textarea,
 			height: 400,
+			language: settings.language || 'en',
+			language_url: settings.languageUrl || undefined,
+			browser_spellcheck: true,
+			contextmenu: false,
 			menubar: settings.enableMenubar ? 'edit view insert format tools table' : false,
 			toolbar: toolbar,
 			toolbar_mode: 'wrap',
@@ -103,6 +107,38 @@
 			promotion: false,
 			relative_urls: false,
 			convert_urls: false,
+			// Pulizia automatica dell'HTML incollato da fonti esterne (Word, web, app di note)
+			// per evitare div annidati e paragrafi vuoti con &nbsp; che causano spaziatura eccessiva.
+			paste_postprocess: function ( plugin, args ) {
+				if ( ! args || ! args.node ) {
+					return;
+				}
+
+				// 1. Converte <div> semplici (senza id/classi speciali) in <p> per coerenza semantica
+				var divs = args.node.querySelectorAll( 'div' );
+				Array.prototype.forEach.call( divs, function ( div ) {
+					if ( ! div.className && ! div.id && ( ! div.style.cssText || div.style.cssText.trim() === '' ) ) {
+						var p = document.createElement( 'p' );
+						while ( div.firstChild ) {
+							p.appendChild( div.firstChild );
+						}
+						if ( div.parentNode ) {
+							div.parentNode.replaceChild( p, div );
+						}
+					}
+				} );
+
+				// 2. Rimuove elementi <p> o <div> vuoti o contenenti solo spazi/nbsp
+				var blocks = args.node.querySelectorAll( 'p, div' );
+				Array.prototype.forEach.call( blocks, function ( block ) {
+					var text = ( block.textContent || block.innerText || '' ).replace( /\u00a0/g, ' ' ).trim();
+					if ( text === '' && ! block.querySelector( 'img, iframe, video, audio, object, embed, table, hr' ) ) {
+						if ( block.parentNode ) {
+							block.parentNode.removeChild( block );
+						}
+					}
+				} );
+			},
 			// Mantiene il contenuto sincronizzato con la textarea originale,
 			// così il salvataggio del form di WordPress continua a funzionare normalmente.
 			setup: function ( editor ) {
