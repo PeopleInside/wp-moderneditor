@@ -255,27 +255,95 @@ class MCE_Editor {
 			MCE_PLUGIN_VERSION
 		);
 
-		$post_id = isset( $_GET['post'] ) ? absint( $_GET['post'] ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- solo lettura per contesto, nessuna azione eseguita.
+		$post_id      = isset( $_GET['post'] ) ? absint( $_GET['post'] ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- solo lettura per contesto, nessuna azione eseguita.
+		$lang         = $this->get_tinymce_language();
+		$language_url = $this->get_language_url( $lang, $use_local );
 
 		wp_localize_script(
 			'mce-modern-tinymce-init',
 			'mceModernSettings',
 			array(
-				'darkMode'       => $settings['dark_mode'],
-				'toolbarMode'    => $settings['toolbar_mode'],
-				'enableMenubar'  => (bool) $settings['enable_menubar'],
-				'toolbarPresets' => $this->get_toolbar_presets(),
-				'oembedProxyUrl' => rest_url( 'oembed/1.0/proxy' ),
-				'restNonce'      => wp_create_nonce( 'wp_rest' ),
-				'postId'         => $post_id,
+				'darkMode'              => $settings['dark_mode'],
+				'toolbarMode'           => $settings['toolbar_mode'],
+				'enableMenubar'         => (bool) $settings['enable_menubar'],
+				'toolbarPresets'        => $this->get_toolbar_presets(),
+				'oembedProxyUrl'        => rest_url( 'oembed/1.0/proxy' ),
+				'restNonce'             => wp_create_nonce( 'wp_rest' ),
+				'postId'                => $post_id,
 				'embedPreviewPluginUrl' => MCE_PLUGIN_URL . 'assets/js/tinymce-embed-preview.js',
 				// base_url indica a TinyMCE da dove caricare dinamicamente
 				// temi, skin, icone e plugin: di norma li risolve in modo
 				// relativo allo script principale, ma quando serviamo il
 				// file locale da uploads conviene essere espliciti.
-				'editorBaseUrl'  => untrailingslashit( $base_url ),
+				'editorBaseUrl'         => untrailingslashit( $base_url ),
+				'language'              => $lang,
+				'languageUrl'           => $language_url,
 			)
 		);
+	}
+
+	/**
+	 * Mappa la lingua utente/sito di WordPress nel codice lingua per TinyMCE.
+	 */
+	private function get_tinymce_language(): string {
+		$locale = get_user_locale();
+		if ( empty( $locale ) || 'en_US' === $locale ) {
+			return 'en';
+		}
+
+		$map = array(
+			'it_IT'        => 'it',
+			'it_IT_formal' => 'it',
+			'es_ES'        => 'es',
+			'es_CL'        => 'es',
+			'es_MX'        => 'es',
+			'es_AR'        => 'es',
+			'es_CO'        => 'es',
+			'es_PE'        => 'es',
+			'es_VE'        => 'es',
+			'fr_FR'        => 'fr_FR',
+			'fr_BE'        => 'fr_FR',
+			'fr_CA'        => 'fr_FR',
+			'de_DE'        => 'de',
+			'de_DE_formal' => 'de',
+			'de_CH'        => 'de',
+			'de_AT'        => 'de',
+			'pt_BR'        => 'pt_BR',
+			'pt_PT'        => 'pt_PT',
+			'nl_NL'        => 'nl',
+			'nl_BE'        => 'nl',
+			'ru_RU'        => 'ru',
+			'ja'           => 'ja',
+			'zh_CN'        => 'zh_CN',
+			'zh_TW'        => 'zh_TW',
+		);
+
+		if ( isset( $map[ $locale ] ) ) {
+			return $map[ $locale ];
+		}
+
+		$short = strtolower( substr( $locale, 0, 2 ) );
+		return ! empty( $short ) ? $short : 'en';
+	}
+
+	/**
+	 * Determina l'URL del pacchetto lingua di TinyMCE se disponibile.
+	 */
+	private function get_language_url( string $lang, bool $use_local ): string {
+		if ( 'en' === $lang ) {
+			return '';
+		}
+
+		$local_file = MCE_PLUGIN_DIR . 'assets/langs/' . $lang . '.js';
+		if ( file_exists( $local_file ) ) {
+			return MCE_PLUGIN_URL . 'assets/langs/' . $lang . '.js';
+		}
+
+		if ( ! $use_local ) {
+			return 'https://cdn.jsdelivr.net/npm/tinymce-i18n@latest/langs7/' . $lang . '.js';
+		}
+
+		return '';
 	}
 
 	/**
