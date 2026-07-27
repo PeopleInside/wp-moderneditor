@@ -3,7 +3,7 @@
  * Plugin Name:       Modern Classic Editor
  * Plugin URI:         https://github.com/PeopleInside/wp-moderneditor
  * Description:       Disattiva Gutenberg e sostituisce l'editor classico di WordPress con TinyMCE moderno (7 o 8, a scelta), caricato da CDN oppure offline (bundlato/scaricabile), con supporto dark mode e toolbar avanzata.
- * Version:           1.3.1
+ * Version:           1.3.2
  * Requires at least: 6.0
  * Requires PHP:       7.4
  * Author:             PeopleInside
@@ -17,7 +17,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'MCE_PLUGIN_VERSION', '1.3.1' );
+define( 'MCE_PLUGIN_VERSION', '1.3.2' );
 define( 'MCE_PLUGIN_FILE', __FILE__ );
 define( 'MCE_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'MCE_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
@@ -62,6 +62,10 @@ final class Modern_Classic_Editor {
 		$defaults = MCE_Settings::get_defaults();
 		if ( false === get_option( MCE_Settings::OPTION_KEY ) ) {
 			add_option( MCE_Settings::OPTION_KEY, $defaults );
+		}
+		$settings = MCE_Settings::get();
+		if ( ! empty( $settings['auto_check_tinymce_updates'] ) && ! wp_next_scheduled( MCE_Vendor::CRON_HOOK ) ) {
+			wp_schedule_event( time() + DAY_IN_SECONDS, 'daily', MCE_Vendor::CRON_HOOK );
 		}
 	}
 

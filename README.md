@@ -7,7 +7,7 @@ A modern editor for Wordpress
 
 This plugin is licensed under the GNU General Public License v2.0 or later (GPLv2+).
 
-**Note about TinyMCE:** This plugin loads TinyMCE 7 from a public CDN (jsdelivr.net) or bundles it offline. TinyMCE 7 is also licensed under GPLv2+, ensuring full license compatibility across the entire project.
+**Note about TinyMCE:** This plugin loads TinyMCE (version 7 or 8) from a public CDN (jsdelivr.net) or bundles it offline. TinyMCE is licensed under GPLv2+, ensuring full license compatibility across the entire project.
 
 ## Disclaimer
 

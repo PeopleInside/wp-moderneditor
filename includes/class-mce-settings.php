@@ -45,6 +45,8 @@ class MCE_Settings {
 		add_action( 'admin_menu', array( $this, 'register_menu' ) );
 		add_action( 'admin_init', array( $this, 'register_settings' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_assets' ) );
+		add_action( 'admin_notices', array( $this, 'maybe_show_update_notice' ) );
+		add_action( 'wp_ajax_mce_dismiss_update_notice', array( $this, 'ajax_dismiss_update_notice' ) );
 	}
 
 	/**
@@ -52,14 +54,14 @@ class MCE_Settings {
 	 */
 	public static function get_defaults(): array {
 		return array(
-			'disable_gutenberg'          => false,  // Opt-in: l'utente deve attivarlo consapevolmente dalle impostazioni.
-			'disabled_post_types'        => array(), // Nessun post type forzato all'editor classico finché non scelto esplicitamente.
+			'disable_gutenberg'          => true,  // Di default disattivato per articoli e pagine.
+			'disabled_post_types'        => array( 'post', 'page' ), // Articoli e pagine abilitati all'editor classico di default.
 			'dark_mode'                  => 'system', // 'system' | 'light' | 'dark'
 			'toolbar_mode'               => 'extended', // 'standard' | 'extended' | 'full'
 			'enable_menubar'             => true,
-			'editor_source'              => 'cdn',  // 'cdn' (jsDelivr, sempre aggiornabile) | 'local' (offline, bundlata nel plugin o scaricata)
-			'tinymce_major'              => '7',  // '7' | '8'. Resta su 7 di default per non cambiare comportamento alle installazioni esistenti.
-			'auto_check_tinymce_updates' => false,  // Controllo periodico via wp-cron: disattivato finché l'utente non lo attiva esplicitamente.
+			'editor_source'              => 'local',  // 'cdn' | 'local' (offline, predefinito locale)
+			'tinymce_major'              => '8',  // '7' | '8' (predefinito TinyMCE 8)
+			'auto_check_tinymce_updates' => true,  // Controllo periodico via wp-cron attivo di default.
 		);
 	}
 
@@ -373,7 +375,7 @@ class MCE_Settings {
 								<?php esc_html_e( 'Controlla automaticamente una volta al giorno se è disponibile una nuova versione e scaricala in background', 'modern-classic-editor' ); ?>
 							</label>
 							<p class="description">
-								<?php esc_html_e( 'Disattivato di default: nessuna richiesta esterna viene effettuata senza il tuo consenso esplicito. Anche con questa opzione disattivata puoi sempre controllare e scaricare manualmente con i bottoni qui sopra.', 'modern-classic-editor' ); ?>
+								<?php esc_html_e( 'Attivato di default: controlla regolarmente in background se è disponibile una nuova versione. Puoi comunque controllare e scaricare manualmente con i bottoni qui sopra.', 'modern-classic-editor' ); ?>
 							</p>
 						</td>
 					</tr>
@@ -421,5 +423,108 @@ class MCE_Settings {
 			</p>
 		</div>
 		<?php
+	}
+
+	/**
+	 * Mostra un banner di avviso quando gli auto-aggiornamenti sono disattivati
+	 * e viene rilevata la disponibilità di una nuova versione di TinyMCE.
+	 * Include la possibilità per l'utente di nascondere il banner fino al
+	 * rilascio di una versione successiva.
+	 */
+	public function maybe_show_update_notice(): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+
+		$settings = self::get();
+		if ( ! empty( $settings['auto_check_tinymce_updates'] ) ) {
+			return;
+		}
+
+		$major = $settings['tinymce_major'] ?? '8';
+		$vendor = MCE_Vendor::instance();
+		$active = $vendor->get_active_local_version( $major );
+		if ( empty( $active['version'] ) ) {
+			return;
+		}
+
+		$latest_known = get_option( 'mce_tinymce_latest_known_version_' . $major, array() );
+		if ( empty( $latest_known['version'] ) ) {
+			$fetched = $vendor->fetch_latest_version( $major );
+			if ( ! is_wp_error( $fetched ) && ! empty( $fetched['version'] ) ) {
+				$latest_known = $fetched;
+			}
+		}
+
+		if ( empty( $latest_known['version'] ) || ! version_compare( $latest_known['version'], $active['version'], '>' ) ) {
+			return;
+		}
+
+		$latest_version = (string) $latest_known['version'];
+		$dismissed = get_option( 'mce_dismissed_update_notice_' . $major, '' );
+		if ( $dismissed === $latest_version || version_compare( $dismissed, $latest_version, '>=' ) ) {
+			return;
+		}
+		?>
+		<div class="notice notice-warning is-dismissible mce-update-notice" data-version="<?php echo esc_attr( $latest_version ); ?>" data-major="<?php echo esc_attr( $major ); ?>" data-nonce="<?php echo esc_attr( wp_create_nonce( 'mce_dismiss_notice' ) ); ?>">
+			<p>
+				<strong><?php esc_html_e( 'Modern Classic Editor:', 'modern-classic-editor' ); ?></strong>
+				<?php
+				printf(
+					/* translators: 1: versione attuale, 2: nuova versione */
+					esc_html__( 'È disponibile una nuova versione di TinyMCE (%2$s) rispetto a quella in uso (%1$s). Gli aggiornamenti automatici sono disattivati: aggiornare l\'editor permette di correggere bug e importanti problemi di sicurezza.', 'modern-classic-editor' ),
+					'<strong>' . esc_html( $active['version'] ) . '</strong>',
+					'<strong>' . esc_html( $latest_version ) . '</strong>'
+				);
+				?>
+			</p>
+			<p>
+				<a href="<?php echo esc_url( admin_url( 'options-general.php?page=' . self::PAGE_SLUG ) ); ?>" class="button button-primary">
+					<?php esc_html_e( 'Vai alle Impostazioni e Aggiorna', 'modern-classic-editor' ); ?>
+				</a>
+				<button type="button" class="button-link mce-dismiss-notice-btn" style="margin-left: 15px; text-decoration: none;">
+					<?php esc_html_e( 'Nascondi fino a nuova versione', 'modern-classic-editor' ); ?>
+				</button>
+			</p>
+			<script>
+			document.addEventListener('DOMContentLoaded', function() {
+				var notice = document.querySelector('.mce-update-notice');
+				if (!notice) return;
+				var version = notice.getAttribute('data-version');
+				var major = notice.getAttribute('data-major');
+				var nonce = notice.getAttribute('data-nonce');
+				var dismissNotice = function() {
+					notice.style.display = 'none';
+					var xhr = new XMLHttpRequest();
+					xhr.open('POST', '<?php echo esc_js( admin_url( 'admin-ajax.php' ) ); ?>', true);
+					xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded;');
+					xhr.send('action=mce_dismiss_update_notice&version=' + encodeURIComponent(version) + '&major=' + encodeURIComponent(major) + '&_ajax_nonce=' + encodeURIComponent(nonce));
+				};
+				notice.addEventListener('click', function(e) {
+					if (e.target && (e.target.classList.contains('mce-dismiss-notice-btn') || e.target.classList.contains('notice-dismiss') || e.target.closest('.notice-dismiss') || e.target.closest('.mce-dismiss-notice-btn'))) {
+						dismissNotice();
+					}
+				});
+			});
+			</script>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Endpoint AJAX per salvare la disattivazione del banner di aggiornamento
+	 * fino al rilascio di una versione ancora successiva.
+	 */
+	public function ajax_dismiss_update_notice(): void {
+		check_ajax_referer( 'mce_dismiss_notice', '_ajax_nonce' );
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Permessi insufficienti.', 'modern-classic-editor' ) ) );
+		}
+		$version = isset( $_POST['version'] ) ? sanitize_text_field( wp_unslash( $_POST['version'] ) ) : '';
+		$major   = isset( $_POST['major'] ) ? sanitize_key( wp_unslash( $_POST['major'] ) ) : '8';
+		if ( ! empty( $version ) ) {
+			update_option( 'mce_dismissed_update_notice_' . $major, $version, false );
+		}
+		wp_send_json_success();
 	}
 }

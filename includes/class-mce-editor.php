@@ -33,16 +33,30 @@ class MCE_Editor {
 	private static ?MCE_Editor $instance = null;
 
 	/**
+	 * Ritorna l'ultima versione nota o attiva da usare su CDN per garantire
+	 * il puntamento al pacchetto più recente disponibile per la major scelta.
+	 */
+	private function get_cdn_version(): string {
+		$major = $this->current_major();
+		$known = get_option( 'mce_tinymce_latest_known_version_' . $major, array() );
+		if ( ! empty( $known['version'] ) ) {
+			return (string) $known['version'];
+		}
+		$local = MCE_Vendor::instance()->get_active_local_version( $major );
+		if ( ! empty( $local['version'] ) ) {
+			return (string) $local['version'];
+		}
+		return $major;
+	}
+
+	/**
 	 * jsDelivr: CDN pubblico, gratuito, senza limiti di caricamenti/account,
 	 * a differenza di cdn.tiny.cloud che richiede una API key per uso
-	 * continuativo. L'URL dipende dalla major scelta nelle impostazioni
-	 * (vedi MCE_Settings, chiave 'tinymce_major'): jsDelivr risolve
-	 * "tinymce@7" o "tinymce@8" sempre all'ultima versione stabile
-	 * pubblicata per quella major (range npm), quindi resta sempre
-	 * aggiornato senza bisogno di specificare una patch version.
+	 * continuativo. L'URL usa l'ultima versione nota di TinyMCE per la major
+	 * selezionata nelle impostazioni, garantendo di caricare sempre la release più recente.
 	 */
 	private function cdn_base_script_url(): string {
-		return 'https://cdn.jsdelivr.net/npm/tinymce@' . $this->current_major() . '/tinymce.min.js';
+		return 'https://cdn.jsdelivr.net/npm/tinymce@' . $this->get_cdn_version() . '/tinymce.min.js';
 	}
 
 	/**
@@ -50,7 +64,7 @@ class MCE_Editor {
 	 * base_url per la risoluzione di temi/skin/icone/plugin lato JS.
 	 */
 	private function cdn_base_url(): string {
-		return 'https://cdn.jsdelivr.net/npm/tinymce@' . $this->current_major();
+		return 'https://cdn.jsdelivr.net/npm/tinymce@' . $this->get_cdn_version();
 	}
 
 	/**
@@ -92,6 +106,7 @@ class MCE_Editor {
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_modern_tinymce' ), 100 );
 
 		add_filter( 'wp_editor_settings', array( $this, 'filter_editor_settings' ), 10, 2 );
+		add_filter( 'content_save_pre', array( $this, 'normalize_links_on_save' ), 10 );
 	}
 
 	/**
@@ -380,5 +395,43 @@ class MCE_Editor {
 		}
 		$settings['quicktags'] = true;
 		return $settings;
+	}
+
+	/**
+	 * Corregge automaticamente i link esterni privi di protocollo al salvataggio
+	 * (es. <a href="marcoborla.com"> diventa <a href="https://marcoborla.com">),
+	 * lasciando intatti i link relativi che iniziano per / (es. /nomecartella/immagine.jpg),
+	 * ancore (#), query (?) o URL con schema già definito (http://, mailto:, tel:, ecc.).
+	 */
+	public function normalize_links_on_save( string $content ): string {
+		if ( empty( $content ) || ( false === strpos( $content, '<a ' ) && false === strpos( $content, '<a	' ) ) ) {
+			return $content;
+		}
+
+		return (string) preg_replace_callback(
+			'/(<a\s+[^>]*?href\s*=\s*["\'])([^"\']+)(["\'][^>]*?>)/i',
+			static function ( array $matches ): string {
+				$prefix = $matches[1];
+				$url    = trim( $matches[2] );
+				$suffix = $matches[3];
+
+				if ( '' === $url ) {
+					return $matches[0];
+				}
+
+				// Se ha già un protocollo/schema (es. http:, https:, mailto:, tel:, ecc.) non toccare.
+				if ( preg_match( '/^[a-z][a-z0-9+.-]*:/i', $url ) ) {
+					return $matches[0];
+				}
+
+				// Se è un link relativo (/nomecartella/immagine.jpg), ancora (#), query (?) o path (./, ../), non toccare.
+				if ( preg_match( '/^[\/#!.?]/', $url ) ) {
+					return $matches[0];
+				}
+
+				return $prefix . 'https://' . $url . $suffix;
+			},
+			$content
+		);
 	}
 }

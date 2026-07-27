@@ -4,7 +4,7 @@ Tags: tinymce, classic editor, gutenberg, dark mode, wysiwyg
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.3.1
+Stable tag: 1.3.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -49,7 +49,7 @@ Sì. TinyMCE è distribuito da Tiny Technologies sotto licenza GNU GPLv2 o succe
 
 = Il controllo aggiornamenti di TinyMCE contatta server esterni senza che io lo sappia? =
 
-No. Il controllo automatico giornaliero è disattivato di default: va attivato esplicitamente dalle impostazioni. Puoi sempre controllare e scaricare manualmente una nuova versione con i bottoni dedicati, indipendentemente da questa opzione.
+Il controllo automatico giornaliero avviene in background una volta al giorno in modo automatico per mantenere aggiornato il bundle di TinyMCE. Puoi comunque controllare e scaricare manualmente una nuova versione con i bottoni dedicati, o disattivare il controllo automatico dalle impostazioni.
 
 = Come vengono aggiornate le nuove versioni del plugin stesso (non di TinyMCE)? =
 
@@ -57,13 +57,20 @@ Il plugin si integra con il meccanismo nativo di aggiornamento dei plugin di Wor
 
 == Changelog ==
 
+= 1.3.2 =
+* Nuovo: aggiornato il bundle di default di TinyMCE 8 alla versione 8.8.2 (ultima release stabile).
+* Nuovo: in modalità CDN l'editor punta automaticamente all'ultima versione disponibile della major selezionata.
+* Nuovo: banner informativo in amministrazione per notificare la disponibilità di una nuova versione di TinyMCE quando gli aggiornamenti automatici sono disattivati, con opzione per nascondere il messaggio fino al rilascio di una versione successiva.
+* Nuovo: correzione automatica dei link esterni inseriti nell'editor senza protocollo (es. `marcoborla.com` viene corretto in `https://marcoborla.com`), lasciando intatti i link relativi (es. `/nomecartella/immagine.jpg`) e le ancore.
+* Nuovo: aggiornate le impostazioni predefinite del plugin. Di default viene ora selezionato TinyMCE 8, abilitato l'uso dell'editor in modalità Locale (offline), attivato il controllo/installazione automatico degli aggiornamenti e disattivato Gutenberg abilitando l'editor classico moderno per articoli e pagine.
+
 = 1.3.1 =
 * Fix: localizzazione dell'editor basata sulla lingua impostata in WordPress (es. italiano `it_IT` -> `it`), con pacchetto lingua nativo TinyMCE incluso.
 * Fix: disattivato il sottomenu contestuale personalizzato di TinyMCE (`contextmenu: false`), ripristinando il menu nativo del browser al click destro nell'area di testo.
 * Fix: attivato il controllo ortografico nativo del browser (`browser_spellcheck: true`), consentendo al browser di evidenziare gli errori di ortografia ed esporre le correzioni nel menu contestuale.
 
 = 1.3.0 =
-* Nuovo: è ora possibile scegliere tra TinyMCE 7 e TinyMCE 8 dalle impostazioni. Il bundle incluso nello zip del plugin contiene entrambe le major (7.9.3 e 8.6.0); il controllo/download di nuove versioni opera sulla major selezionata, senza mai proporre un salto automatico di major.
+* Nuovo: è ora possibile scegliere tra TinyMCE 7 e TinyMCE 8 dalle impostazioni. Il bundle incluso nello zip del plugin contiene entrambe le major (7.9.3 e 8.8.2); il controllo/download di nuove versioni opera sulla major selezionata, senza mai proporre un salto automatico di major.
 * Nuovo: bottone "Elimina versione locale scaricata", visibile quando la sorgente è impostata su CDN ed esiste comunque una versione scaricata in precedenza per la major selezionata; elimina solo la copia in wp-content/uploads, il bundle incluso nel plugin resta sempre disponibile come fallback.
 * Le versioni locali scaricate per major diverse vengono mantenute in sottocartelle separate, così passare da 7 a 8 (e viceversa) non comporta la perdita dei download già effettuati.
 
