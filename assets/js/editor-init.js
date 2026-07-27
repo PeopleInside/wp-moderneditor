@@ -107,6 +107,17 @@
 			promotion: false,
 			relative_urls: false,
 			convert_urls: false,
+			link_default_protocol: 'https',
+			link_assume_external_targets: 'https',
+			urlconverter_callback: function ( url, node, on_save, name ) {
+				if ( name === 'href' && url && typeof url === 'string' ) {
+					var trimmed = url.trim();
+					if ( trimmed && ! /^[a-z][a-z0-9+.-]*:/i.test( trimmed ) && ! /^[\/#!.?]/i.test( trimmed ) ) {
+						return 'https://' + trimmed;
+					}
+				}
+				return url;
+			},
 			// Pulizia automatica dell'HTML incollato da fonti esterne (Word, web, app di note)
 			// per evitare div annidati e paragrafi vuoti con &nbsp; che causano spaziatura eccessiva.
 			paste_postprocess: function ( plugin, args ) {
@@ -138,12 +149,36 @@
 						}
 					}
 				} );
+
+				// 3. Corregge i link esterni privi di protocollo (es. marcoborla.com -> https://marcoborla.com),
+				// lasciando intatti i link relativi che iniziano per / (es. /nomecartella/immagine.jpg),
+				// ancore (#), query (?) o URL con schema già definito (http://, mailto:, ecc.).
+				var links = args.node.querySelectorAll( 'a[href]' );
+				Array.prototype.forEach.call( links, function ( link ) {
+					var href = ( link.getAttribute( 'href' ) || '' ).trim();
+					if ( href && ! /^[a-z][a-z0-9+.-]*:/i.test( href ) && ! /^[\/#!.?]/i.test( href ) ) {
+						link.setAttribute( 'href', 'https://' + href );
+					}
+				} );
 			},
 			// Mantiene il contenuto sincronizzato con la textarea originale,
 			// così il salvataggio del form di WordPress continua a funzionare normalmente.
 			setup: function ( editor ) {
 				editor.on( 'change keyup undo redo', function () {
 					editor.save();
+				} );
+
+				editor.on( 'SaveContent BeforeSetContent', function ( e ) {
+					if ( ! e.content || ( e.content.indexOf( '<a ' ) === -1 && e.content.indexOf( '<a\t' ) === -1 ) ) {
+						return;
+					}
+					e.content = e.content.replace( /(<a\s+[^>]*?href\s*=\s*["'])([^"']+)(["'][^>]*?>)/gi, function ( match, prefix, href, suffix ) {
+						var trimmed = ( href || '' ).trim();
+						if ( ! trimmed || /^[a-z][a-z0-9+.-]*:/i.test( trimmed ) || /^[\/#!.?]/i.test( trimmed ) ) {
+							return match;
+						}
+						return prefix + 'https://' + trimmed + suffix;
+					} );
 				} );
 
 				// Mantiene window.wpActiveEditor sincronizzato con l'editor a fuoco,

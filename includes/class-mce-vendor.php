@@ -57,7 +57,7 @@ class MCE_Vendor {
 	 */
 	const BUNDLED_VERSIONS = array(
 		'7' => '7.9.3',
-		'8' => '8.6.0',
+		'8' => '8.8.2',
 	);
 
 	/**
@@ -125,6 +125,7 @@ class MCE_Vendor {
 		add_action( 'wp_ajax_' . self::AJAX_DELETE, array( $this, 'ajax_delete_downloaded_version' ) );
 
 		add_action( self::CRON_HOOK, array( $this, 'cron_check_for_update' ) );
+		add_action( 'add_option_' . MCE_Settings::OPTION_KEY, array( $this, 'sync_cron_on_add' ), 10, 2 );
 		add_action( 'update_option_' . MCE_Settings::OPTION_KEY, array( $this, 'sync_cron_schedule' ), 10, 2 );
 
 		register_deactivation_hook( MCE_PLUGIN_FILE, array( $this, 'clear_cron' ) );
@@ -446,7 +447,7 @@ class MCE_Vendor {
 	 * sottocartella della major indicata.
 	 *
 	 * Sicurezza: $version è validata con una regex stringente ancorata
-	 * alla major richiesta (es. "8.6.0" è valido solo se $major è "8"):
+	 * alla major richiesta (es. "8.8.2" è valido solo se $major è "8"):
 	 * è l'unica barriera che impedisce path traversal o SSRF tramite
 	 * questo parametro, quindi va mantenuta rigorosa anche in futuro.
 	 * $major, a differenza di $version, non proviene mai direttamente
@@ -677,22 +678,22 @@ class MCE_Vendor {
 	}
 
 	/**
-	 * Controllo automatico via wp-cron, eseguito solo se l'utente ha
-	 * attivato esplicitamente l'opzione corrispondente nelle impostazioni
-	 * (nessuna richiesta di rete in background senza consenso esplicito).
-	 * Se trova una versione più recente, la scarica e installa da solo,
-	 * così l'utente la trova già pronta al prossimo accesso. Opera sempre
-	 * sulla major attualmente selezionata nelle impostazioni.
+	 * Controllo automatico via wp-cron. Esegue regolarmente una verifica
+	 * leggera su npm per conoscere l'ultima versione disponibile (necessario
+	 * sia per l'auto-download sia per avvisare l'utente con il banner
+	 * informativo quando gli auto-aggiornamenti sono disattivati). Se trova una
+	 * versione più recente e l'opzione auto_check_tinymce_updates è attiva,
+	 * la scarica e installa automaticamente in background.
 	 */
 	public function cron_check_for_update(): void {
-		$settings = MCE_Settings::get();
-		if ( empty( $settings['auto_check_tinymce_updates'] ) ) {
+		$major  = $this->normalize_major();
+		$result = $this->fetch_latest_version( $major );
+		if ( is_wp_error( $result ) || empty( $result['version'] ) ) {
 			return;
 		}
 
-		$major  = $this->normalize_major();
-		$result = $this->fetch_latest_version( $major );
-		if ( is_wp_error( $result ) ) {
+		$settings = MCE_Settings::get();
+		if ( empty( $settings['auto_check_tinymce_updates'] ) ) {
 			return;
 		}
 
@@ -703,20 +704,21 @@ class MCE_Vendor {
 	}
 
 	/**
-	 * Attiva/disattiva il controllo periodico via wp-cron in base
-	 * all'opzione "auto_check_tinymce_updates" salvata dall'utente.
+	 * Mantiene schedulato il controllo periodico via wp-cron per verificare
+	 * la disponibilità di nuove release per l'editor o per notificare
+	 * l'utente quando gli auto-aggiornamenti sono disattivati.
 	 *
 	 * @param array $old_value Valore precedente dell'opzione mce_settings.
 	 * @param array $new_value Nuovo valore salvato.
 	 */
 	public function sync_cron_schedule( $old_value, $new_value ): void {
-		$enabled = ! empty( $new_value['auto_check_tinymce_updates'] );
-
-		if ( $enabled && ! wp_next_scheduled( self::CRON_HOOK ) ) {
+		if ( ! wp_next_scheduled( self::CRON_HOOK ) ) {
 			wp_schedule_event( time() + DAY_IN_SECONDS, 'daily', self::CRON_HOOK );
-		} elseif ( ! $enabled ) {
-			$this->clear_cron();
 		}
+	}
+
+	public function sync_cron_on_add( $option, $value ): void {
+		$this->sync_cron_schedule( array(), $value );
 	}
 
 	public function clear_cron(): void {
