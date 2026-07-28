@@ -1,6 +1,4 @@
 name: "CodeQL config"
+
 paths-ignore:
-  - "assets/**"
-  - "**/vendor/**"
-  - "**/node_modules/**"
-  - "**/tinymce/**"
+  - "assets/vendor/tinymce/**"
