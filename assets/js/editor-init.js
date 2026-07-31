@@ -70,10 +70,15 @@
 	function initEditor( textarea ) {
 		var theme = resolveTheme();
 
+		var editorHeight = settings.editorHeight ? parseInt( settings.editorHeight, 10 ) : 600;
+		if ( isNaN( editorHeight ) || editorHeight < 100 ) {
+			editorHeight = 600;
+		}
+
 		var config = {
 			license_key: 'gpl',
 			target: textarea,
-			height: 400,
+			height: editorHeight,
 			language: settings.language || 'en',
 			language_url: settings.languageUrl || undefined,
 			browser_spellcheck: true,

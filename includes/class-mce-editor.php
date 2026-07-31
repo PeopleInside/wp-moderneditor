@@ -281,6 +281,7 @@ class MCE_Editor {
 				'darkMode'              => $settings['dark_mode'],
 				'toolbarMode'           => $settings['toolbar_mode'],
 				'enableMenubar'         => (bool) $settings['enable_menubar'],
+				'editorHeight'          => (int) ( $settings['editor_height'] ?? 600 ),
 				'toolbarPresets'        => $this->get_toolbar_presets(),
 				'oembedProxyUrl'        => rest_url( 'oembed/1.0/proxy' ),
 				'restNonce'             => wp_create_nonce( 'wp_rest' ),

@@ -4,7 +4,7 @@ Tags: tinymce, classic editor, gutenberg, dark mode, wysiwyg
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.3.2
+Stable tag: 1.3.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -56,6 +56,10 @@ Il controllo automatico giornaliero avviene in background una volta al giorno in
 Il plugin si integra con il meccanismo nativo di aggiornamento dei plugin di WordPress: se è pubblicata una nuova release sul repository GitHub ufficiale (github.com/PeopleInside/wp-moderneditor), comparirà nella pagina Plugin con lo stesso avviso "Aggiornamento disponibile" e lo stesso bottone "Aggiorna ora" usati per i plugin della directory ufficiale di WordPress.org, ed è compatibile con gli aggiornamenti automatici dei plugin se li attivi dalla stessa pagina. Il controllo avviene in background, in HTTPS, al massimo ogni 12 ore (la stessa cadenza che WordPress usa già per tutti i plugin installati).
 
 == Changelog ==
+
+= 1.3.3 =
+* Nuovo: aggiunta opzione nelle impostazioni per configurare l'altezza dell'area dell'editor TinyMCE (valore predefinito: 600px).
+* Nuovo: visualizzazione nelle impostazioni dell'orario dell'ultimo controllo automatico degli aggiornamenti e della prossima data/ora programmata.
 
 = 1.3.2 =
 * Nuovo: aggiornato il bundle di default di TinyMCE 8 alla versione 8.8.2 (ultima release stabile).

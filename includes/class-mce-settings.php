@@ -62,6 +62,7 @@ class MCE_Settings {
 			'editor_source'              => 'local',  // 'cdn' | 'local' (offline, predefinito locale)
 			'tinymce_major'              => '8',  // '7' | '8' (predefinito TinyMCE 8)
 			'auto_check_tinymce_updates' => true,  // Controllo periodico via wp-cron attivo di default.
+			'editor_height'              => 600,   // Altezza in pixel dell'area editor.
 		);
 	}
 
@@ -134,6 +135,9 @@ class MCE_Settings {
 		$output['tinymce_major'] = in_array( $tinymce_major, MCE_Vendor::SUPPORTED_MAJORS, true ) ? $tinymce_major : $defaults['tinymce_major'];
 
 		$output['auto_check_tinymce_updates'] = ! empty( $input['auto_check_tinymce_updates'] );
+
+		$editor_height = isset( $input['editor_height'] ) ? absint( $input['editor_height'] ) : $defaults['editor_height'];
+		$output['editor_height'] = ( $editor_height >= 100 && $editor_height <= 2000 ) ? $editor_height : $defaults['editor_height'];
 
 		if ( 'local' === $output['editor_source'] ) {
 			$vendor = MCE_Vendor::instance();
@@ -377,12 +381,89 @@ class MCE_Settings {
 							<p class="description">
 								<?php esc_html_e( 'Attivato di default: controlla regolarmente in background se è disponibile una nuova versione. Puoi comunque controllare e scaricare manualmente con i bottoni qui sopra.', 'modern-classic-editor' ); ?>
 							</p>
+							<?php
+							$last_auto_check = get_option( 'mce_last_auto_check_time', '' );
+							$next_scheduled  = wp_next_scheduled( MCE_Vendor::CRON_HOOK );
+							if ( ! empty( $settings['auto_check_tinymce_updates'] ) ) {
+								if ( ! $next_scheduled || $next_scheduled < time() ) {
+									wp_clear_scheduled_hook( MCE_Vendor::CRON_HOOK );
+									wp_schedule_event( time() + DAY_IN_SECONDS, 'daily', MCE_Vendor::CRON_HOOK );
+									$next_scheduled = wp_next_scheduled( MCE_Vendor::CRON_HOOK );
+								}
+							}
+							$date_format = get_option( 'date_format' ) . ' ' . get_option( 'time_format' );
+							?>
+							<div class="mce-auto-check-log" style="margin-top: 12px; padding: 12px 14px; background: #f6f7f7; border-left: 4px solid #2271b1; border-radius: 2px; max-width: 600px;">
+								<p style="margin: 0 0 6px 0;">
+									<strong><?php esc_html_e( 'Registro dei controlli automatici:', 'modern-classic-editor' ); ?></strong>
+								</p>
+								<?php if ( ! empty( $settings['auto_check_tinymce_updates'] ) ) : ?>
+									<p style="margin: 0 0 4px 0;">
+										<?php esc_html_e( 'Ultimo controllo automatico:', 'modern-classic-editor' ); ?>
+										<strong>
+											<?php
+											if ( ! empty( $last_auto_check ) ) {
+												$last_ts = is_numeric( $last_auto_check ) ? (int) $last_auto_check : strtotime( $last_auto_check );
+												echo esc_html( wp_date( $date_format, $last_ts ) );
+											} else {
+												esc_html_e( 'Nessun controllo automatico ancora eseguito.', 'modern-classic-editor' );
+											}
+											?>
+										</strong>
+									</p>
+									<p style="margin: 0;">
+										<?php esc_html_e( 'Prossimo controllo programmato:', 'modern-classic-editor' ); ?>
+										<strong>
+											<?php
+											if ( $next_scheduled ) {
+												echo esc_html( wp_date( $date_format, $next_scheduled ) );
+											} else {
+												esc_html_e( 'Non pianificato', 'modern-classic-editor' );
+											}
+											?>
+										</strong>
+									</p>
+								<?php else : ?>
+									<p style="margin: 0;">
+										<em><?php esc_html_e( 'Il controllo automatico degli aggiornamenti è disattivato.', 'modern-classic-editor' ); ?></em>
+										<?php if ( ! empty( $last_auto_check ) ) : ?>
+											<br />
+											<?php
+											$last_ts = is_numeric( $last_auto_check ) ? (int) $last_auto_check : strtotime( $last_auto_check );
+											printf(
+												/* translators: %s: data dell'ultimo controllo */
+												esc_html__( 'Ultimo controllo eseguito in precedenza: %s', 'modern-classic-editor' ),
+												'<strong>' . esc_html( wp_date( $date_format, $last_ts ) ) . '</strong>'
+											);
+											?>
+										<?php endif; ?>
+									</p>
+								<?php endif; ?>
+							</div>
 						</td>
 					</tr>
 				</table>
 
 				<h2 class="title"><?php esc_html_e( 'Editor TinyMCE moderno', 'modern-classic-editor' ); ?></h2>
 				<table class="form-table" role="presentation">
+					<tr>
+						<th scope="row"><label for="mce_editor_height"><?php esc_html_e( 'Altezza dell\'editor (px)', 'modern-classic-editor' ); ?></label></th>
+						<td>
+							<input
+								type="number"
+								id="mce_editor_height"
+								name="<?php echo esc_attr( self::OPTION_KEY ); ?>[editor_height]"
+								value="<?php echo esc_attr( $settings['editor_height'] ); ?>"
+								min="100"
+								max="2000"
+								step="10"
+								class="small-text"
+							/> px
+							<p class="description">
+								<?php esc_html_e( 'Altezza dell\'area di modifica dell\'editor in pixel (predefinito: 600).', 'modern-classic-editor' ); ?>
+							</p>
+						</td>
+					</tr>
 					<tr>
 						<th scope="row"><?php esc_html_e( 'Tema (dark mode)', 'modern-classic-editor' ); ?></th>
 						<td>

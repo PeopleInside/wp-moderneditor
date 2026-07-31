@@ -687,6 +687,7 @@ class MCE_Vendor {
 	 */
 	public function cron_check_for_update(): void {
 		$major  = $this->normalize_major();
+		update_option( 'mce_last_auto_check_time', time(), false );
 		$result = $this->fetch_latest_version( $major );
 		if ( is_wp_error( $result ) || empty( $result['version'] ) ) {
 			return;
@@ -712,8 +713,14 @@ class MCE_Vendor {
 	 * @param array $new_value Nuovo valore salvato.
 	 */
 	public function sync_cron_schedule( $old_value, $new_value ): void {
-		if ( ! wp_next_scheduled( self::CRON_HOOK ) ) {
-			wp_schedule_event( time() + DAY_IN_SECONDS, 'daily', self::CRON_HOOK );
+		if ( ! empty( $new_value['auto_check_tinymce_updates'] ) ) {
+			$timestamp = wp_next_scheduled( self::CRON_HOOK );
+			if ( ! $timestamp || $timestamp < time() ) {
+				$this->clear_cron();
+				wp_schedule_event( time() + DAY_IN_SECONDS, 'daily', self::CRON_HOOK );
+			}
+		} else {
+			$this->clear_cron();
 		}
 	}
 
