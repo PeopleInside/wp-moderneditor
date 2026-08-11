@@ -4,7 +4,7 @@ Tags: tinymce, classic editor, gutenberg, dark mode, wysiwyg
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.3.3
+Stable tag: 1.3.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -56,6 +56,14 @@ Il controllo automatico giornaliero avviene in background una volta al giorno in
 Il plugin si integra con il meccanismo nativo di aggiornamento dei plugin di WordPress: se è pubblicata una nuova release sul repository GitHub ufficiale (github.com/PeopleInside/wp-moderneditor), comparirà nella pagina Plugin con lo stesso avviso "Aggiornamento disponibile" e lo stesso bottone "Aggiorna ora" usati per i plugin della directory ufficiale di WordPress.org, ed è compatibile con gli aggiornamenti automatici dei plugin se li attivi dalla stessa pagina. Il controllo avviene in background, in HTTPS, al massimo ogni 12 ore (la stessa cadenza che WordPress usa già per tutti i plugin installati).
 
 == Changelog ==
+
+= 1.3.4 =
+* Nuovo: integrazione completa dell'editor TinyMCE moderno nei blocchi e popup "Editor classico" (core/freeform) dell'editor Gutenberg.
+* Nuovo: aggiunto il pulsante "Aggiungi media" (`wp_add_media`) direttamente nella toolbar dell'editor e nel menu Inserisci, integrato con la Libreria Media nativa di WordPress (`wp.media`) anche nei blocchi e popup Gutenberg.
+* Nuovo: aggiunto il pulsante e la procedura guidata "Link ad ancora" (`link_anchor`), con rilevamento automatico di tutte le ancore/segnalibri presenti nel documento e dialogo per l'inserimento rapido di collegamenti `#ancora`.
+* Fix: uniformata la toolbar e tutte le funzioni dell'editor affinché appaiano identiche e complete sia quando usate stand-alone che all'interno di Gutenberg.
+* Fix: risolto il problema della finestra popup dell'editor troppo stretta in Gutenberg e sbloccati tutti i menu a tendina e finestre di dialogo (portando lo `z-index` sopra i backdrop di Gutenberg).
+* Nuovo: integrazione nativa e completa del pulsante e del plugin per le Ancore (`anchor`), presente in tutte le toolbar e nel menu Inserisci per creare e gestire ancore nei contenuti.
 
 = 1.3.3 =
 * Nuovo: aggiunta opzione nelle impostazioni per configurare l'altezza dell'area dell'editor TinyMCE (valore predefinito: 600px).

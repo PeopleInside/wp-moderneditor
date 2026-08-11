@@ -101,11 +101,14 @@ class MCE_Editor {
 		// direttamente sul registro di WP_Scripts mentre viene costruito.
 		add_action( 'wp_default_scripts', array( $this, 'neutralize_legacy_editor_scripts' ), 100 );
 
-		// Carica il nostro TinyMCE da CDN + script di inizializzazione, solo dove serve.
+		// Carica il nostro TinyMCE da CDN + script di inizializzazione, sia per l'editor
+		// classico sia per i blocchi "Editor classico" (core/freeform) in Gutenberg.
 		// Priorità alta (100) per essere certi di girare DOPO eventuali enqueue di temi/plugin.
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_modern_tinymce' ), 100 );
+		add_action( 'enqueue_block_editor_assets', array( $this, 'enqueue_modern_tinymce' ), 100 );
 
 		add_filter( 'wp_editor_settings', array( $this, 'filter_editor_settings' ), 10, 2 );
+		add_filter( 'tiny_mce_before_init', array( $this, 'filter_tinymce_init_settings' ), 10, 2 );
 		add_filter( 'content_save_pre', array( $this, 'normalize_links_on_save' ), 10 );
 	}
 
@@ -153,15 +156,8 @@ class MCE_Editor {
 
 	/**
 	 * Determina se la pagina admin corrente è una pagina di editing
-	 * dove ha senso caricare l'editor classico (post.php, post-new.php,
-	 * o pagine con wp_editor() come widget testo, ecc.).
-	 *
-	 * IMPORTANTE: su post.php/post-new.php non basta controllare la
-	 * pagina ($pagenow): se il post type corrente usa Gutenberg, qui
-	 * deve restituire false. Altrimenti gli script legacy 'editor' e
-	 * 'wp-tinymce' verrebbero svuotati anche dentro l'editor a blocchi,
-	 * rompendo il blocco nativo "Editor classico" (core/freeform), che
-	 * dipende proprio da quegli script per funzionare.
+	 * dove ha senso caricare l'editor (post.php, post-new.php,
+	 * widgets.php, customize.php, site-editor.php o wp_editor()).
 	 */
 	private function should_load_modern_editor(): bool {
 		if ( ! is_admin() ) {
@@ -169,20 +165,9 @@ class MCE_Editor {
 		}
 
 		global $pagenow;
-		$editor_pages = array( 'post.php', 'post-new.php', 'widgets.php', 'customize.php' );
+		$editor_pages = array( 'post.php', 'post-new.php', 'widgets.php', 'customize.php', 'site-editor.php' );
 
-		if ( ! in_array( $pagenow, $editor_pages, true ) ) {
-			return false;
-		}
-
-		if ( in_array( $pagenow, array( 'post.php', 'post-new.php' ), true ) ) {
-			$post_type = $this->get_current_post_type_from_request();
-			if ( '' !== $post_type && ! $this->uses_classic_editor( $post_type ) ) {
-				return false;
-			}
-		}
-
-		return true;
+		return in_array( $pagenow, $editor_pages, true );
 	}
 
 	/**
@@ -215,17 +200,16 @@ class MCE_Editor {
 	 * e lo script di inizializzazione del plugin, passando in JS le
 	 * impostazioni salvate (dark mode, toolbar, ecc.).
 	 */
-	public function enqueue_modern_tinymce( string $hook ): void {
-		if ( ! $this->should_load_modern_editor() ) {
+	public function enqueue_modern_tinymce( string $hook = '' ): void {
+		static $enqueued = false;
+		if ( $enqueued || ! $this->should_load_modern_editor() ) {
 			return;
 		}
+		$enqueued = true;
 
-		// Carica solo se l'editor classico è effettivamente in uso per questo schermo.
-		$screen    = get_current_screen();
-		$post_type = $screen && isset( $screen->post_type ) ? $screen->post_type : '';
-
-		if ( $post_type && ! $this->uses_classic_editor( $post_type ) ) {
-			return;
+		// Carica sempre la libreria WP Media di WordPress per la gestione multimediale
+		if ( function_exists( 'wp_enqueue_media' ) ) {
+			wp_enqueue_media();
 		}
 
 		$settings    = MCE_Settings::get();
@@ -253,6 +237,12 @@ class MCE_Editor {
 			array(),
 			$use_local ? $local_info['version'] : MCE_PLUGIN_VERSION,
 			false // in head: TinyMCE deve essere disponibile prima dell'init di WP.
+		);
+
+		wp_add_inline_script(
+			'mce-modern-tinymce',
+			'if(typeof tinymce !== "undefined" && !tinymce.$){window.tinymce.$ = window.jQuery || window.$;}',
+			'after'
 		);
 
 		wp_enqueue_script(
@@ -287,10 +277,7 @@ class MCE_Editor {
 				'restNonce'             => wp_create_nonce( 'wp_rest' ),
 				'postId'                => $post_id,
 				'embedPreviewPluginUrl' => MCE_PLUGIN_URL . 'assets/js/tinymce-embed-preview.js',
-				// base_url indica a TinyMCE da dove caricare dinamicamente
-				// temi, skin, icone e plugin: di norma li risolve in modo
-				// relativo allo script principale, ma quando serviamo il
-				// file locale da uploads conviene essere espliciti.
+				'isItalian'             => ( 0 === strpos( strtolower( function_exists( 'get_user_locale' ) ? get_user_locale() : get_locale() ), 'it' ) ),
 				'editorBaseUrl'         => untrailingslashit( $base_url ),
 				'language'              => $lang,
 				'languageUrl'           => $language_url,
@@ -379,9 +366,9 @@ class MCE_Editor {
 	 */
 	private function get_toolbar_presets(): array {
 		return array(
-			'standard' => 'undo redo | bold italic | bullist numlist | link unlink | blockquote',
-			'extended' => 'undo redo | blocks fontfamily fontsize | bold italic underline strikethrough | forecolor backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link unlink image media table | removeformat | code fullscreen',
-			'full'     => 'undo redo | blocks fontfamily fontsize | bold italic underline strikethrough subscript superscript | forecolor backcolor | alignleft aligncenter alignright alignjustify lineheight | bullist numlist outdent indent | link unlink image media table charmap emoticons | removeformat | code preview fullscreen | searchreplace visualblocks',
+			'standard' => "undo redo | blocks | bold italic | bullist numlist | link unlink anchor link_anchor wp_add_media | blockquote | wp_save",
+			'extended' => "undo redo | blocks fontfamily fontsize | bold italic underline strikethrough | forecolor backcolor | alignleft aligncenter alignright alignjustify lineheight\nbullist numlist outdent indent | link unlink anchor link_anchor wp_add_media | image media table charmap emoticons | removeformat | wp_save | code preview fullscreen | searchreplace visualblocks",
+			'full'     => "undo redo | blocks fontfamily fontsize | bold italic underline strikethrough subscript superscript | forecolor backcolor | alignleft aligncenter alignright alignjustify lineheight\nbullist numlist outdent indent | link unlink anchor link_anchor wp_add_media | image media table charmap emoticons | removeformat | wp_save | code preview fullscreen | searchreplace visualblocks",
 		);
 	}
 
@@ -396,6 +383,43 @@ class MCE_Editor {
 		}
 		$settings['quicktags'] = true;
 		return $settings;
+	}
+
+	/**
+	 * Adatta le impostazioni tinymce restituite da WordPress (es. per i blocchi
+	 * Gutenberg o per wp_editor()) in modo che usino TinyMCE moderno.
+	 */
+	public function filter_tinymce_init_settings( array $mceInit, string $editor_id = '' ): array {
+		if ( ! $this->should_load_modern_editor() ) {
+			return $mceInit;
+		}
+
+		$settings   = MCE_Settings::get();
+		$use_local  = 'local' === $settings['editor_source'];
+		$vendor     = MCE_Vendor::instance();
+		$local_info = $vendor->get_active_local_version();
+		$base_url   = $this->cdn_base_url();
+
+		if ( $use_local && $vendor->is_version_complete( $local_info['dir'] ) ) {
+			$base_url = $local_info['url'];
+		}
+
+		$mceInit['license_key'] = 'gpl';
+		$mceInit['theme']       = 'silver';
+		$mceInit['base_url']    = untrailingslashit( $base_url );
+
+		// Rimuove i plugin TinyMCE 4 legacy non supportati o sostituiti in TinyMCE 7/8
+		// e garantisce la presenza dei plugin moderni
+		$legacy           = array( 'wpeditimage', 'wpgallery', 'wpemoji', 'wpdialogs', 'wplink', 'wpview', 'colorpicker', 'textcolor', 'wordpress', 'wpautoresize', 'wptextpattern', 'tabfocus', 'hr', 'paste', 'anchor', 'contextmenu', 'spellchecker' );
+		$required_plugins = array( 'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview', 'searchreplace', 'visualblocks', 'code', 'fullscreen', 'insertdatetime', 'media', 'table', 'wordcount', 'emoticons', 'wpembedpreview' );
+
+		$plugins  = ! empty( $mceInit['plugins'] ) ? ( is_array( $mceInit['plugins'] ) ? $mceInit['plugins'] : preg_split( '/[,\s]+/', $mceInit['plugins'] ) ) : array();
+		$filtered = array_diff( $plugins, $legacy );
+		$merged   = array_unique( array_merge( $filtered, $required_plugins ) );
+
+		$mceInit['plugins'] = implode( ',', array_filter( $merged ) );
+
+		return $mceInit;
 	}
 
 	/**

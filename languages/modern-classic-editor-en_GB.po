@@ -121,6 +121,9 @@ msgstr "The npm registry responded with status code %d."
 msgid "Impossibile salvare il file scaricato: %s"
 msgstr "Could not save the downloaded file: %s"
 
+msgid "Impostazioni"
+msgstr "Settings"
+
 #: includes/class-mce-settings.php:237
 msgid ""
 "Locale (offline) — file inclusi nel plugin o scaricati in precedenza, "
