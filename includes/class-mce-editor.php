@@ -107,9 +107,21 @@ class MCE_Editor {
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_modern_tinymce' ), 100 );
 		add_action( 'enqueue_block_editor_assets', array( $this, 'enqueue_modern_tinymce' ), 100 );
 
+		add_filter( 'wp_default_editor', array( $this, 'filter_default_editor' ), 10, 1 );
 		add_filter( 'wp_editor_settings', array( $this, 'filter_editor_settings' ), 10, 2 );
 		add_filter( 'tiny_mce_before_init', array( $this, 'filter_tinymce_init_settings' ), 10, 2 );
 		add_filter( 'content_save_pre', array( $this, 'normalize_links_on_save' ), 10 );
+	}
+
+	/**
+	 * Forza l'editor di default su 'tinymce' per garantire che WordPress
+	 * prepari il contenuto tramite wp_richedit_pre() preservando paragrafi e ritorni a capo.
+	 */
+	public function filter_default_editor( string $default ): string {
+		if ( $this->should_load_modern_editor() ) {
+			return 'tinymce';
+		}
+		return $default;
 	}
 
 	/**
@@ -404,9 +416,20 @@ class MCE_Editor {
 			$base_url = $local_info['url'];
 		}
 
-		$mceInit['license_key'] = 'gpl';
-		$mceInit['theme']       = 'silver';
-		$mceInit['base_url']    = untrailingslashit( $base_url );
+		$mceInit['license_key']                 = 'gpl';
+		$mceInit['theme']                       = 'silver';
+		$mceInit['base_url']                    = untrailingslashit( $base_url );
+		$mceInit['entity_encoding']             = 'raw';
+		$mceInit['forced_root_block']           = 'p';
+		$mceInit['keep_styles']                 = true;
+		$mceInit['remove_trailing_brs']         = false;
+		$mceInit['end_container_on_empty_block'] = true;
+		$mceInit['wpautop']                     = true;
+		$mceInit['media_live_embeds']           = true;
+		$mceInit['convert_urls']                = false;
+		$mceInit['relative_urls']               = false;
+		$mceInit['extended_valid_elements']     = 'iframe[src|title|width|height|allowfullscreen|frameborder|style|class|id|loading|referrerpolicy],p[style|class|id|align],span[style|class|id],img[*]';
+		$mceInit['add_unload_trigger']         = false;
 
 		// Rimuove i plugin TinyMCE 4 legacy non supportati o sostituiti in TinyMCE 7/8
 		// e garantisce la presenza dei plugin moderni

@@ -36,6 +36,129 @@
 	}
 
 	/**
+	 * Riproduce la logica di wpautop() di WordPress in JavaScript.
+	 * Trasforma doppie interruzioni di riga (\n\n) in paragrafi (<p>)
+	 * e singole interruzioni di riga (\n) in tag <br />, proteggendo blocchi
+	 * preformattati, script, stili, tabelle, iframe, ecc.
+	 */
+	function wpautop( text, br ) {
+		if ( typeof text !== 'string' || ! text ) {
+			return '';
+		}
+		if ( typeof br === 'undefined' ) {
+			br = true;
+		}
+
+		var trimmed = text.trim();
+		if ( trimmed === '' ) {
+			return '';
+		}
+
+		var preserve = [];
+		var preserveIndex = 0;
+
+		// Normalizza i ritorni a capo
+		var str = text.replace( /\r\n|\r/g, '\n' );
+
+		// Proteggi i blocchi <script>, <style>, <pre>, <code>, <svg>, <!-- commenti -->
+		str = str.replace( /<(script|style|pre|code|svg)[\s\S]*?<\/\1>/gi, function ( match ) {
+			var placeholder = '<!--MCE_PRESERVE_' + ( preserveIndex++ ) + '-->';
+			preserve.push( { placeholder: placeholder, content: match } );
+			return placeholder;
+		} );
+
+		str = str.replace( /<!--[\s\S]*?-->/g, function ( match ) {
+			var placeholder = '<!--MCE_PRESERVE_' + ( preserveIndex++ ) + '-->';
+			preserve.push( { placeholder: placeholder, content: match } );
+			return placeholder;
+		} );
+
+		var allblocks = '(?:table|thead|tfoot|caption|col|colgroup|tbody|tr|td|th|div|dl|dd|dt|ul|ol|li|pre|form|map|area|blockquote|address|math|style|p|h[1-6]|hr|fieldset|legend|section|article|aside|hgroup|header|footer|nav|figure|figcaption|details|menu|summary|iframe)';
+
+		var pees = str.split( /\n\s*\n/ );
+		var result = '';
+
+		for ( var i = 0; i < pees.length; i++ ) {
+			var chunk = pees[ i ].trim();
+			if ( chunk ) {
+				var isBlock = new RegExp( '^<' + allblocks + '[\\s/>]', 'i' ).test( chunk );
+				if ( ! isBlock ) {
+					chunk = '<p>' + chunk + '</p>';
+				}
+				result += chunk + '\n';
+			}
+		}
+
+		if ( br ) {
+			result = result.replace( /(<p[^>]*>[\s\S]*?<\/p>)/gi, function ( pMatch ) {
+				return pMatch.replace( /\n/g, '<br />' );
+			} );
+		}
+
+		for ( var j = 0; j < preserve.length; j++ ) {
+			result = result.replace( preserve[ j ].placeholder, preserve[ j ].content );
+		}
+
+		return result.trim();
+	}
+
+	function pre_wpautop( content ) {
+		if ( typeof content !== 'string' || ! content ) {
+			return '';
+		}
+		var output = content;
+		output = output.replace( /<br\s*\/?>\n?/gi, '\n' );
+		output = output.replace( /<\/p>\s*<p[^>]*>/gi, '\n\n' );
+		output = output.replace( /<p[^>]*>/gi, '' );
+		output = output.replace( /<\/p>/gi, '\n\n' );
+		return output.trim();
+	}
+
+	// Espone window.switchEditors per compatibilità con WordPress e plugin terzi
+	if ( typeof window.switchEditors === 'undefined' ) {
+		window.switchEditors = {
+			wpautop: wpautop,
+			pre_wpautop: pre_wpautop,
+			_wpautop: wpautop,
+			_wptexturize: function ( text ) { return text; },
+			go: function ( id, mode ) {
+				var ed = window.tinymce ? window.tinymce.get( id ) : null;
+				var el = document.getElementById( id );
+				if ( mode === 'html' || mode === 'text' ) {
+					if ( ed ) {
+						if ( el ) {
+							el.value = ed.getContent();
+						}
+						ed.hide();
+					}
+				} else {
+					if ( ed ) {
+						if ( el ) {
+							var val = el.value;
+							if ( val && typeof val === 'string' && val.indexOf( '\n' ) !== -1 ) {
+								var hasBlock = /<\/?(?:p|div|table|ul|ol|h[1-6]|blockquote|iframe|section|article)/i.test( val );
+								if ( ! hasBlock ) {
+									val = wpautop( val );
+								}
+							}
+							el.value = val;
+							ed.setContent( val );
+						}
+						ed.show();
+					}
+				}
+			}
+		};
+	} else {
+		if ( typeof window.switchEditors.wpautop !== 'function' ) {
+			window.switchEditors.wpautop = wpautop;
+		}
+		if ( typeof window.switchEditors.pre_wpautop !== 'function' ) {
+			window.switchEditors.pre_wpautop = pre_wpautop;
+		}
+	}
+
+	/**
 	 * Determina skin e content_css in base alla preferenza salvata
 	 * ('system' | 'light' | 'dark'), con supporto al cambio live
 	 * se l'utente cambia tema del sistema operativo mentre la pagina è aperta.
@@ -71,6 +194,162 @@
 		'wpview', 'colorpicker', 'textcolor', 'wordpress', 'wpautoresize',
 		'wptextpattern', 'tabfocus', 'hr', 'paste', 'contextmenu', 'spellchecker'
 	];
+
+	/**
+	 * Gestione e memorizzazione persistente dell'ultima preferenza per il vincolo
+	 * delle proporzioni (icona lucchetto) nei dialog di inserimento/modifica Media e Immagini di TinyMCE.
+	 */
+	var MCE_LOCK_STORAGE_KEY = 'mce_media_constrain_proportions';
+
+	function isLockActive( btn ) {
+		if ( ! btn ) return false;
+		var ariaPressed = btn.getAttribute( 'aria-pressed' );
+		if ( ariaPressed === 'true' ) return true;
+		if ( ariaPressed === 'false' ) return false;
+		if ( btn.classList.contains( 'tox-button--active' ) ) return true;
+		if ( btn.classList.contains( 'tox-lock--locked' ) ) return true;
+		if ( btn.classList.contains( 'tox-lock--unlocked' ) ) return false;
+		return true;
+	}
+
+	function checkAndApplyLockPref( btn ) {
+		if ( ! btn || btn.dataset.mceLockPrefHandled === '1' ) {
+			return;
+		}
+		btn.dataset.mceLockPrefHandled = '1';
+
+		var savedPref = null;
+		try {
+			savedPref = localStorage.getItem( MCE_LOCK_STORAGE_KEY );
+		} catch ( e ) {}
+
+		// Se l'utente ha precedentemente scelto di disattivare il lucchetto ('false')
+		if ( savedPref === 'false' ) {
+			if ( isLockActive( btn ) ) {
+				window.setTimeout( function () {
+					if ( isLockActive( btn ) ) {
+						btn.click();
+					}
+				}, 30 );
+			}
+		} else if ( savedPref === 'true' ) {
+			if ( ! isLockActive( btn ) ) {
+				window.setTimeout( function () {
+					if ( ! isLockActive( btn ) ) {
+						btn.click();
+					}
+				}, 30 );
+			}
+		}
+
+		// Memorizza l'ultima scelta ogni volta che l'utente clicca il lucchetto
+		btn.addEventListener( 'click', function () {
+			window.setTimeout( function () {
+				var currentLocked = isLockActive( btn );
+				try {
+					localStorage.setItem( MCE_LOCK_STORAGE_KEY, currentLocked ? 'true' : 'false' );
+				} catch ( err ) {}
+			}, 60 );
+		} );
+	}
+
+	function scanForLockButtons( root ) {
+		if ( ! root ) root = document;
+		var selectors = [
+			'button.tox-lock',
+			'button[aria-label*="proportions" i]',
+			'button[aria-label*="proporzioni" i]',
+			'button[aria-label*="aspect" i]',
+			'button[aria-label*="lock" i]',
+			'button[aria-label*="lucchetto" i]',
+			'.tox-form__controls-h-stacked button.tox-button--icon'
+		];
+		var buttons = root.querySelectorAll( selectors.join( ',' ) );
+		Array.prototype.forEach.call( buttons, function ( btn ) {
+			var parentGroup = btn.closest( '.tox-form__controls-h-stacked, .tox-form__group, .tox-dialog' );
+			if ( parentGroup ) {
+				checkAndApplyLockPref( btn );
+			}
+		} );
+	}
+
+	/**
+	 * Protegge e sincronizza gli editor durante il salvataggio o l'aggiornamento
+	 * dell'articolo (es. clic su 'Aggiorna', 'Pubblica', 'Salva bozza' o submit del form #post).
+	 * Rimuove i falsi allarmi di 'modifiche non salvate' (beforeunload) di WordPress.
+	 */
+	function bindSaveAndSubmitGuards( editor ) {
+		var targetEl = typeof editor.getElement === 'function' ? editor.getElement() : null;
+		var form = targetEl && targetEl.form ? targetEl.form : document.getElementById( 'post' );
+
+		function onSaveOrSubmit() {
+			syncTargetElement( editor );
+			if ( typeof editor.setDirty === 'function' ) {
+				editor.setDirty( false );
+			}
+			if ( typeof editor.isNotDirty !== 'undefined' ) {
+				editor.isNotDirty = true;
+			}
+			if ( typeof editor.save === 'function' ) {
+				try {
+					editor.save();
+				} catch ( e ) {}
+			}
+
+			// Sincronizza e pulisce lo stato dirty anche per tutti gli altri editor
+			if ( window.tinymce && window.tinymce.editors ) {
+				window.tinymce.editors.forEach( function ( ed ) {
+					if ( ed ) {
+						syncTargetElement( ed );
+						if ( typeof ed.setDirty === 'function' ) {
+							ed.setDirty( false );
+						}
+						if ( typeof ed.isNotDirty !== 'undefined' ) {
+							ed.isNotDirty = true;
+						}
+						if ( typeof ed.save === 'function' ) {
+							try {
+								ed.save();
+							} catch ( errSave ) {}
+						}
+					}
+				} );
+			}
+
+			// Disattiva il prompt di conferma di navigazione
+			window.onbeforeunload = null;
+			if ( window.jQuery ) {
+				try {
+					window.jQuery( window ).off( 'beforeunload.edit-post beforeunload' );
+				} catch ( errJq ) {}
+			}
+
+			// Aggiorna lo stato di wp.autosave per evitare controlli disallineati
+			if ( window.wp && window.wp.autosave ) {
+				try {
+					if ( typeof window.wp.autosave.getCompareString === 'function' ) {
+						window.wp.autosave.initialCompareString = window.wp.autosave.getCompareString();
+					}
+					if ( window.wp.autosave.local && typeof window.wp.autosave.local.save === 'function' ) {
+						window.wp.autosave.local.save();
+					}
+				} catch ( errAs ) {}
+			}
+		}
+
+		if ( form && form.dataset.mceSaveGuarded !== '1' ) {
+			form.dataset.mceSaveGuarded = '1';
+			form.addEventListener( 'submit', onSaveOrSubmit, true );
+		}
+
+		var submitButtons = document.querySelectorAll( '#publish, #save-post, #post-preview, input[name="save"], input[name="publish"], button[type="submit"], input[type="submit"], .editor-post-publish-button, .editor-post-save-draft' );
+		Array.prototype.forEach.call( submitButtons, function ( btn ) {
+			if ( btn.dataset.mceSaveGuarded !== '1' ) {
+				btn.dataset.mceSaveGuarded = '1';
+				btn.addEventListener( 'click', onSaveOrSubmit, true );
+			}
+		} );
+	}
 
 	function sanitizePlugins( plugins ) {
 		var list = [];
@@ -108,10 +387,10 @@
 		delete config.toolbar3;
 		delete config.toolbar4;
 		delete config.wp_autoresize_on;
-		delete config.add_unload_trigger;
 		delete config.wp_keep_scroll_position;
 		delete config.wp_shortcut_labels;
 
+		config.add_unload_trigger = false;
 		config.license_key = 'gpl';
 		config.theme = 'silver';
 		config.skin = theme.skin;
@@ -128,6 +407,15 @@
 		config.suffix = '.min';
 		config.browser_spellcheck = true;
 		config.contextmenu = false;
+		config.entity_encoding = 'raw';
+		config.forced_root_block = 'p';
+		config.keep_styles = true;
+		config.remove_trailing_brs = false;
+		config.end_container_on_empty_block = true;
+		config.pad_empty_with_br = true;
+		config.media_live_embeds = true;
+		config.extended_valid_elements = 'iframe[src|title|width|height|allowfullscreen|frameborder|style|class|id|loading|referrerpolicy],p[style|class|id|align],span[style|class|id],img[*]';
+		config.custom_elements = '~iframe';
 
 		// Imposta formattazione pulita per i menu a tendina di Carattere e Dimensione carattere
 		var defaultFontFamilies =
@@ -229,6 +517,7 @@
 		var originalPastePostprocess = userConfig.paste_postprocess;
 		config.paste_postprocess = function ( plugin, args ) {
 			if ( args && args.node ) {
+				// Normalizza eventuali tag <div> non stilati in <p> per coerenza semantica
 				var divs = args.node.querySelectorAll( 'div' );
 				Array.prototype.forEach.call( divs, function ( div ) {
 					if ( ! div.className && ! div.id && ( ! div.style.cssText || div.style.cssText.trim() === '' ) ) {
@@ -242,16 +531,7 @@
 					}
 				} );
 
-				var blocks = args.node.querySelectorAll( 'p, div' );
-				Array.prototype.forEach.call( blocks, function ( block ) {
-					var text = ( block.textContent || block.innerText || '' ).replace( /\u00a0/g, ' ' ).trim();
-					if ( text === '' && ! block.querySelector( 'img, iframe, video, audio, object, embed, table, hr' ) ) {
-						if ( block.parentNode ) {
-							block.parentNode.removeChild( block );
-						}
-					}
-				} );
-
+				// Normalizza i link senza schema in HTTPS
 				var links = args.node.querySelectorAll( 'a[href]' );
 				Array.prototype.forEach.call( links, function ( link ) {
 					var href = ( link.getAttribute( 'href' ) || '' ).trim();
@@ -840,9 +1120,52 @@
 				window.setTimeout( checkModal, 200 );
 				window.setTimeout( checkModal, 500 );
 				window.setTimeout( checkModal, 1000 );
+
+				bindSaveAndSubmitGuards( editor );
+				scanForLockButtons( document.body );
 			} );
 
-			editor.on( 'SaveContent BeforeSetContent', function ( e ) {
+			editor.on( 'OpenWindow', function () {
+				window.setTimeout( function () {
+					scanForLockButtons( document.body );
+				}, 50 );
+				window.setTimeout( function () {
+					scanForLockButtons( document.body );
+				}, 200 );
+			} );
+
+			editor.on( 'BeforeSetContent', function ( e ) {
+				if ( e.content && typeof e.content === 'string' ) {
+					// Se il contenuto è stato escapato in entità HTML (es. inizia con &lt;p o &lt;iframe o &lt;div)
+					if ( /^\s*&lt;(?:p|div|table|ul|ol|h[1-6]|blockquote|iframe|section|article|a|em|strong|img)/i.test( e.content ) ) {
+						var txt = document.createElement( 'textarea' );
+						txt.innerHTML = e.content;
+						e.content = txt.value;
+					}
+
+					// Se il contenuto contiene nuove righe (\n) ma non è strutturato in tag a blocchi (<p>),
+					// applichiamo wpautop per preservare paragrafi, spazi e a capo (solo se non contiene già tag di blocco)
+					if ( e.content.indexOf( '\n' ) !== -1 ) {
+						var hasBlock = /<\/?(?:p|div|table|ul|ol|h[1-6]|blockquote|iframe|section|article)/i.test( e.content );
+						if ( ! hasBlock ) {
+							e.content = wpautop( e.content );
+						}
+					}
+
+					// Corregge link senza schema
+					if ( e.content.indexOf( '<a ' ) !== -1 || e.content.indexOf( '<a\t' ) !== -1 ) {
+						e.content = e.content.replace( /(<a\s+[^>]*?href\s*=\s*["'])([^"']+)(["'][^>]*?>)/gi, function ( match, prefix, href, suffix ) {
+							var trimmed = ( href || '' ).trim();
+							if ( ! trimmed || /^[a-z][a-z0-9+.-]*:/i.test( trimmed ) || /^[\/#!.?]/i.test( trimmed ) ) {
+								return match;
+							}
+							return prefix + 'https://' + trimmed + suffix;
+						} );
+					}
+				}
+			} );
+
+			editor.on( 'SaveContent', function ( e ) {
 				if ( ! e.content || ( e.content.indexOf( '<a ' ) === -1 && e.content.indexOf( '<a\t' ) === -1 ) ) {
 					return;
 				}
@@ -901,6 +1224,13 @@
 				if ( ! config.target && ! config.selector && id ) {
 					var el = document.getElementById( id );
 					if ( el ) {
+						if ( el.value && typeof el.value === 'string' ) {
+							if ( /^\s*&lt;(?:p|div|table|ul|ol|h[1-6]|blockquote|iframe|section|article|a|em|strong|img)/i.test( el.value ) ) {
+								var txt = document.createElement( 'textarea' );
+								txt.innerHTML = el.value;
+								el.value = txt.value;
+							}
+						}
 						config.target = el;
 					} else {
 						config.selector = '#' + id;
@@ -930,6 +1260,13 @@
 				return el ? el.value : '';
 			},
 			setContent: function ( id, content ) {
+				if ( typeof content === 'string' ) {
+					if ( /^\s*&lt;(?:p|div|table|ul|ol|h[1-6]|blockquote|iframe|section|article|a|em|strong|img)/i.test( content ) ) {
+						var txt = document.createElement( 'textarea' );
+						txt.innerHTML = content;
+						content = txt.value;
+					}
+				}
 				if ( window.tinymce ) {
 					var ed = window.tinymce.get( id );
 					if ( ed ) {
@@ -978,6 +1315,13 @@
 	var initialConfigs = {};
 
 	function initEditor( textarea ) {
+		if ( textarea && textarea.value && typeof textarea.value === 'string' ) {
+			if ( /^\s*&lt;(?:p|div|table|ul|ol|h[1-6]|blockquote|iframe|section|article|a|em|strong|img)/i.test( textarea.value ) ) {
+				var txt = document.createElement( 'textarea' );
+				txt.innerHTML = textarea.value;
+				textarea.value = txt.value;
+			}
+		}
 		if ( textarea.id ) {
 			initialConfigs[ textarea.id ] = { target: textarea };
 		}
@@ -1022,6 +1366,7 @@
 			} );
 			if ( hasNewNodes ) {
 				scheduleRescan();
+				scanForLockButtons( document.body );
 			}
 		} );
 
