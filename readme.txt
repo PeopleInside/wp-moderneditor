@@ -4,7 +4,7 @@ Tags: tinymce, classic editor, gutenberg, dark mode, wysiwyg
 Requires at least: 6.0
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.3.6
+Stable tag: 1.3.7
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -56,6 +56,9 @@ Il controllo automatico giornaliero avviene in background una volta al giorno in
 Il plugin si integra con il meccanismo nativo di aggiornamento dei plugin di WordPress: se è pubblicata una nuova release sul repository GitHub ufficiale (github.com/PeopleInside/wp-moderneditor), comparirà nella pagina Plugin con lo stesso avviso "Aggiornamento disponibile" e lo stesso bottone "Aggiorna ora" usati per i plugin della directory ufficiale di WordPress.org, ed è compatibile con gli aggiornamenti automatici dei plugin se li attivi dalla stessa pagina. Il controllo avviene in background, in HTTPS, al massimo ogni 12 ore (la stessa cadenza che WordPress usa già per tutti i plugin installati).
 
 == Changelog ==
+
+= 1.3.7 =
+Eliminate DOM-based HTML decode path flagged by CodeQL (alert #6)- #5
 
 = 1.3.6 =
 * Fix: risolto il falso allarme "Le modifiche andranno perse" (beforeunload) quando si salva o aggiorna un articolo premendo "Aggiorna", "Pubblica" o "Salva bozza", garantendo la corretta sincronizzazione e azzeramento dello stato dirty degli editor.
