@@ -3,7 +3,7 @@
  * Plugin Name:       Modern Classic Editor
  * Plugin URI:         https://github.com/PeopleInside/wp-moderneditor
  * Description:       Disattiva Gutenberg e sostituisce l'editor classico di WordPress con TinyMCE moderno (7 o 8, a scelta), caricato da CDN oppure offline (bundlato/scaricabile), con supporto dark mode e toolbar avanzata.
- * Version:           1.3.6
+ * Version:           1.3.7
  * Requires at least: 6.0
  * Requires PHP:       7.4
  * Author:             PeopleInside
