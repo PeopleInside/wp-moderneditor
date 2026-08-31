@@ -114,6 +114,19 @@
 		return output.trim();
 	}
 
+	function decodeEscapedHtml( content ) {
+		if ( typeof content !== 'string' || ! content ) {
+			return '';
+		}
+
+		return content
+			.replace( /&lt;/gi, '<' )
+			.replace( /&gt;/gi, '>' )
+			.replace( /&quot;/gi, '"' )
+			.replace( /&#0*39;|&#x0*27;/gi, '\'' )
+			.replace( /&amp;/gi, '&' );
+	}
+
 	// Espone window.switchEditors per compatibilità con WordPress e plugin terzi
 	if ( typeof window.switchEditors === 'undefined' ) {
 		window.switchEditors = {
@@ -1138,9 +1151,7 @@
 				if ( e.content && typeof e.content === 'string' ) {
 					// Se il contenuto è stato escapato in entità HTML (es. inizia con &lt;p o &lt;iframe o &lt;div)
 					if ( /^\s*&lt;(?:p|div|table|ul|ol|h[1-6]|blockquote|iframe|section|article|a|em|strong|img)/i.test( e.content ) ) {
-						var txt = document.createElement( 'textarea' );
-						txt.innerHTML = e.content;
-						e.content = txt.value;
+						e.content = decodeEscapedHtml( e.content );
 					}
 
 					// Se il contenuto contiene nuove righe (\n) ma non è strutturato in tag a blocchi (<p>),
@@ -1226,9 +1237,7 @@
 					if ( el ) {
 						if ( el.value && typeof el.value === 'string' ) {
 							if ( /^\s*&lt;(?:p|div|table|ul|ol|h[1-6]|blockquote|iframe|section|article|a|em|strong|img)/i.test( el.value ) ) {
-								var txt = document.createElement( 'textarea' );
-								txt.innerHTML = el.value;
-								el.value = txt.value;
+								el.value = decodeEscapedHtml( el.value );
 							}
 						}
 						config.target = el;
@@ -1262,9 +1271,7 @@
 			setContent: function ( id, content ) {
 				if ( typeof content === 'string' ) {
 					if ( /^\s*&lt;(?:p|div|table|ul|ol|h[1-6]|blockquote|iframe|section|article|a|em|strong|img)/i.test( content ) ) {
-						var txt = document.createElement( 'textarea' );
-						txt.innerHTML = content;
-						content = txt.value;
+						content = decodeEscapedHtml( content );
 					}
 				}
 				if ( window.tinymce ) {
@@ -1317,9 +1324,7 @@
 	function initEditor( textarea ) {
 		if ( textarea && textarea.value && typeof textarea.value === 'string' ) {
 			if ( /^\s*&lt;(?:p|div|table|ul|ol|h[1-6]|blockquote|iframe|section|article|a|em|strong|img)/i.test( textarea.value ) ) {
-				var txt = document.createElement( 'textarea' );
-				txt.innerHTML = textarea.value;
-				textarea.value = txt.value;
+				textarea.value = decodeEscapedHtml( textarea.value );
 			}
 		}
 		if ( textarea.id ) {
