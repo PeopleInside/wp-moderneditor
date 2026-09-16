@@ -3,7 +3,7 @@
  * Plugin Name:       Modern Classic Editor
  * Plugin URI:         https://github.com/PeopleInside/wp-moderneditor
  * Description:       Disattiva Gutenberg e sostituisce l'editor classico di WordPress con TinyMCE moderno (7 o 8, a scelta), caricato da CDN oppure offline (bundlato/scaricabile), con supporto dark mode e toolbar avanzata.
- * Version:           1.3.7
+ * Version:           1.3.8
  * Requires at least: 6.0
  * Requires PHP:       7.4
  * Author:             PeopleInside
@@ -17,7 +17,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'MCE_PLUGIN_VERSION', '1.3.7' );
+define( 'MCE_PLUGIN_VERSION', '1.3.8' );
 define( 'MCE_PLUGIN_FILE', __FILE__ );
 define( 'MCE_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'MCE_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
@@ -50,10 +50,32 @@ final class Modern_Classic_Editor {
 
 		add_action( 'plugins_loaded', array( $this, 'load_textdomain' ) );
 
-		// Solo in wp-admin: gli hook di update dei plugin (transient,
-		// plugins_api, upgrader_*) e il link Impostazioni nella lista plugin.
-		if ( is_admin() ) {
+		/*
+		 * L'updater NON va limitato a wp-admin.
+		 *
+		 * Gli aggiornamenti automatici girano dentro wp-cron.php (e, per chi
+		 * lo usa, dentro WP-CLI): in entrambi i contesti is_admin() vale
+		 * false. WP_Automatic_Updater::run() chiama per prima cosa
+		 * wp_update_plugins(), che RISCRIVE il transient "update_plugins" e
+		 * quindi fa scattare il filtro pre_set_site_transient_update_plugins.
+		 * Se in quel momento l'updater non è registrato, la voce di
+		 * aggiornamento iniettata durante una precedente visita in bacheca
+		 * viene sovrascritta e sparisce; subito dopo l'auto-updater legge il
+		 * transient, non trova nulla per questo plugin e non aggiorna niente,
+		 * silenziosamente. Risultato: il plugin appare "da aggiornare" in
+		 * bacheca ma l'auto-update non parte mai.
+		 *
+		 * Registrare sempre l'updater non ha costo sul front-end: tutti i
+		 * filtri agganciati sono inerti finché WordPress non aggiorna il
+		 * transient degli aggiornamenti o non avvia un upgrade, quindi
+		 * nessuna chiamata di rete durante le visite normali al sito.
+		 */
+		if ( is_admin() || wp_doing_cron() || ( defined( 'WP_CLI' ) && WP_CLI ) ) {
 			MCE_Updater::instance();
+		}
+
+		// Solo in wp-admin: il link "Impostazioni" nella lista plugin.
+		if ( is_admin() ) {
 			add_filter( 'plugin_action_links_' . plugin_basename( MCE_PLUGIN_FILE ), array( $this, 'add_plugin_action_links' ) );
 		}
 
