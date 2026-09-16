@@ -16,9 +16,14 @@ jobs:
 
       - name: Crea ZIP del plugin
         run: |
-          # Crea la cartella con il nome corretto del plugin
+          # Nome base del plugin (mantenuto coerente con la tua configurazione precedente)
           PLUGIN_NAME="modern-classic-editor"
-          mkdir -p $PLUGIN_NAME
+          # Recupera la versione dal tag della release (es. 1.3.8)
+          VERSION="${{ github.event.release.tag_name }}"
+          # Nome del file ZIP con la versione
+          ZIP_NAME="${PLUGIN_NAME}-${VERSION}.zip"
+          
+          mkdir -p "$PLUGIN_NAME"
           
           # Copia tutti i file del plugin nella cartella
           # Escludiamo .git, .github, la cartella stessa e file non necessari
@@ -27,16 +32,17 @@ jobs:
                    --exclude='.gitignore' \
                    --exclude="$PLUGIN_NAME" \
                    --exclude='*.zip' \
-                   ./ $PLUGIN_NAME/
+                   ./ "$PLUGIN_NAME/"
           
-          # Crea lo ZIP
-          zip -r $PLUGIN_NAME.zip $PLUGIN_NAME
+          # Crea lo ZIP con il nome che include la versione
+          zip -r "$ZIP_NAME" "$PLUGIN_NAME"
           
-          echo "PLUGIN_NAME=$PLUGIN_NAME" >> $GITHUB_ENV
+          # Salva il nome del file ZIP nelle variabili di ambiente per i passaggi successivi
+          echo "ZIP_NAME=$ZIP_NAME" >> $GITHUB_ENV
 
       - name: Carica ZIP nella Release
         uses: softprops/action-gh-release@v2
         with:
-          files: ${{ env.PLUGIN_NAME }}.zip
+          files: ${{ env.ZIP_NAME }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
