@@ -17,12 +17,6 @@ Modern Editor solves two common problems:
 1. **Outdated TinyMCE**: WordPress includes an internally outdated version of TinyMCE. This plugin replaces it with modern TinyMCE (major version 7 or 8, selectable from settings), loaded via CDN (jsDelivr) or entirely offline, under the GPL license, without requiring any accounts or API keys.
 2. **User Experience**: It provides a clean interface with dark mode support and an advanced toolbar ready to use out of the box.
 
-== Installation ==
-
-1. Install the plugin directly through the WordPress plugins screen, or upload the plugin folder to the `/wp-content/plugins/` directory.
-2. Activate the plugin through the 'Plugins' menu in WordPress.
-3. Go to 'Settings' to configure your preferences.
-
 == Frequently Asked Questions ==
 
 = Are the offline TinyMCE files legal to distribute? =
