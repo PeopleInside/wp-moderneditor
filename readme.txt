@@ -1,121 +1,42 @@
-=== Modern Classic Editor ===
+=== Modern Editor ===
 Contributors: PeopleInside
-Tags: tinymce, classic editor, gutenberg, dark mode, wysiwyg
+Tags: tinymce, classic editor, gutenberg, dark mode, wysiwyg, editor
 Requires at least: 6.0
-Tested up to: 7.0
+Tested up to: 7.1.1
 Requires PHP: 7.4
-Stable tag: 1.3.7
+Stable tag: 1.3.8
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Disattiva Gutenberg e usa una versione moderna di TinyMCE (7 o 8, a scelta), caricata via CDN oppure offline, con supporto dark mode e toolbar configurabile.
+A modern editor for WordPress. Disables Gutenberg and replaces the classic editor with modern TinyMCE (version 7 or 8), loaded via CDN or offline, featuring dark mode support and an advanced toolbar.
 
 == Description ==
 
-Modern Classic Editor risolve due problemi comuni:
+Modern Editor solves two common problems:
 
-1. **TinyMCE datato**: WordPress include internamente una versione di TinyMCE non aggiornata. Questo plugin la sostituisce con TinyMCE moderno (major 7 o 8, selezionabile dalle impostazioni), caricato da CDN (jsDelivr) oppure interamente offline, sotto licenza GPL, senza bisogno di account o API key.
-2. **Editor a blocchi non desiderato**: permette di disattivare Gutenberg per i tipi di contenuto che scegli (articoli, pagine, custom post type), ripristinando l'editor classico, senza interferire con il blocco nativo "Editor classico" quando lavori dentro Gutenberg.
-
-Funzionalità principali:
-
-* Toggle per disattivare Gutenberg, per singolo tipo di contenuto, senza rompere contenuti già pubblicati a blocchi
-* TinyMCE moderno (7 o 8, a scelta), caricato da CDN pubblico oppure interamente offline (file inclusi nel plugin o scaricabili dalle impostazioni)
-* Controllo manuale o automatico di nuove versioni di TinyMCE, con download e installazione in un clic
-* Dark mode: automatica (segue il sistema), sempre chiara, o sempre scura
-* Tre preset di toolbar: standard, estesa, completa
-* Compatibile con il pulsante nativo "Aggiungi media" di WordPress
-* Aggiornamenti del plugin stesso integrati nel meccanismo nativo di WordPress, tramite le release GitHub ufficiali
+1. **Outdated TinyMCE**: WordPress includes an internally outdated version of TinyMCE. This plugin replaces it with modern TinyMCE (major version 7 or 8, selectable from settings), loaded via CDN (jsDelivr) or entirely offline, under the GPL license, without requiring any accounts or API keys.
+2. **User Experience**: It provides a clean interface with dark mode support and an advanced toolbar ready to use out of the box.
 
 == Installation ==
 
-1. Carica la cartella del plugin in `/wp-content/plugins/`
-2. Attiva il plugin dal menu Plugin di WordPress
-3. Vai su Impostazioni > Modern Classic Editor per configurare Gutenberg, dark mode e toolbar
+1. Install the plugin directly through the WordPress plugins screen, or upload the plugin folder to the `/wp-content/plugins/` directory.
+2. Activate the plugin through the 'Plugins' menu in WordPress.
+3. Go to 'Settings' to configure your preferences.
 
 == Frequently Asked Questions ==
 
-= TinyMCE viene scaricato ogni volta dal CDN? =
+= Are the offline TinyMCE files legal to distribute? =
 
-Lo script viene caricato dal browser dell'utente che sta editando (con cache standard del browser/CDN), non dal server. Non ci sono limiti di utilizzo perché jsDelivr è un CDN pubblico gratuito, diverso dal servizio cloud a pagamento di Tiny.
-
-= Funziona offline o su reti con restrizioni? =
-
-Sì. Nelle impostazioni puoi scegliere "Locale (offline)" come sorgente dell'editor: in questo caso TinyMCE viene caricato dai file inclusi nel plugin (o da una versione più recente eventualmente scaricata), senza alcuna richiesta verso CDN esterni durante l'uso dell'editor. È la scelta consigliata per ambienti air-gapped, dietro firewall restrittivi, o con policy di sicurezza che bloccano script di terze parti.
-
-= I file di TinyMCE offline sono legali da distribuire? =
-
-Sì. TinyMCE è distribuito da Tiny Technologies sotto licenza GNU GPLv2 o successiva. I file inclusi nel plugin (e quelli scaricabili dalle impostazioni) provengono dal pacchetto ufficiale "tinymce" pubblicato su npm, senza alcuna modifica al codice. La licenza GPL viene dichiarata esplicitamente nell'inizializzazione dell'editor (`license_key: 'gpl'`).
-
-= Il controllo aggiornamenti di TinyMCE contatta server esterni senza che io lo sappia? =
-
-Il controllo automatico giornaliero avviene in background una volta al giorno in modo automatico per mantenere aggiornato il bundle di TinyMCE. Puoi comunque controllare e scaricare manualmente una nuova versione con i bottoni dedicati, o disattivare il controllo automatico dalle impostazioni.
-
-= Come vengono aggiornate le nuove versioni del plugin stesso (non di TinyMCE)? =
-
-Il plugin si integra con il meccanismo nativo di aggiornamento dei plugin di WordPress: se è pubblicata una nuova release sul repository GitHub ufficiale (github.com/PeopleInside/wp-moderneditor), comparirà nella pagina Plugin con lo stesso avviso "Aggiornamento disponibile" e lo stesso bottone "Aggiorna ora" usati per i plugin della directory ufficiale di WordPress.org, ed è compatibile con gli aggiornamenti automatici dei plugin se li attivi dalla stessa pagina. Il controllo avviene in background, in HTTPS, al massimo ogni 12 ore (la stessa cadenza che WordPress usa già per tutti i plugin installati).
+Yes. TinyMCE is distributed by Tiny Technologies under the GNU GPLv2 or later license. The files included in the plugin (and those downloadable from the settings) come directly from the official "tinymce" package published on npm, without any modifications to the code. The GPL license is explicitly declared in the editor initialization (`license_key: 'gpl'`).
 
 == Changelog ==
 
+= 1.3.8 =
+* Update release workflow to include version in ZIP name.
+* Refactor MCE_Updater class for clarity and efficiency.
+
 = 1.3.7 =
-Eliminate DOM-based HTML decode path flagged by CodeQL (alert #6)- #5
-
-= 1.3.6 =
-* Fix: risolto il falso allarme "Le modifiche andranno perse" (beforeunload) quando si salva o aggiorna un articolo premendo "Aggiorna", "Pubblica" o "Salva bozza", garantendo la corretta sincronizzazione e azzeramento dello stato dirty degli editor.
-* Nuovo: memorizzazione automatica dell'ultima scelta per il vincolo delle proporzioni (icona lucchetto) nei dialog di inserimento video e immagini (Media). Se l'utente sblocca le proporzioni, l'editor ricorderà la scelta anche alle successive aperture senza dover cliccare nuovamente sul lucchetto.
-
-= 1.3.5 =
-* Fix: risolto il problema di doppio escaping delle entità HTML (`&lt;p&gt;`, `&lt;iframe&gt;`) all'apertura dell'editor in modifica articoli, ripristinando il corretto rendering visivo di iframe video (YouTube, Vimeo), markup HTML e testi.
-* Fix: abilitato il rendering live degli embed multimediali (`media_live_embeds`) ed estesi gli elementi HTML validi (`extended_valid_elements`) per tag `iframe`, stili e attributi incorporati.
-* Fix: garantita la conservazione esatta di paragrafi (<p>), interruzioni di riga (<br>) e spaziature senza corrompere il markup o convertire i tag in testo grezzo.
-* Fix: rimosso il filtro distruttivo di rimozione dei paragrafi vuoti in fase di incolla e salvataggio, consentendo l'uso di righe vuote e spaziature desiderate.
-* Fix: aggiunto l'oggetto globale `window.switchEditors` per piena compatibilità con l'ecosistema WordPress e script di terze parti.
+* Fix: replace unsafe HTML decode in editor init.
 
 = 1.3.4 =
-* Nuovo: integrazione completa dell'editor TinyMCE moderno nei blocchi e popup "Editor classico" (core/freeform) dell'editor Gutenberg.
-* Nuovo: aggiunto il pulsante "Aggiungi media" (`wp_add_media`) direttamente nella toolbar dell'editor e nel menu Inserisci, integrato con la Libreria Media nativa di WordPress (`wp.media`) anche nei blocchi e popup Gutenberg.
-* Nuovo: aggiunto il pulsante e la procedura guidata "Link ad ancora" (`link_anchor`), con rilevamento automatico di tutte le ancore/segnalibri presenti nel documento e dialogo per l'inserimento rapido di collegamenti `#ancora`.
-* Fix: uniformata la toolbar e tutte le funzioni dell'editor affinché appaiano identiche e complete sia quando usate stand-alone che all'interno di Gutenberg.
-* Fix: risolto il problema della finestra popup dell'editor troppo stretta in Gutenberg e sbloccati tutti i menu a tendina e finestre di dialogo (portando lo `z-index` sopra i backdrop di Gutenberg).
-* Nuovo: integrazione nativa e completa del pulsante e del plugin per le Ancore (`anchor`), presente in tutte le toolbar e nel menu Inserisci per creare e gestire ancore nei contenuti.
-
-= 1.3.3 =
-* Nuovo: aggiunta opzione nelle impostazioni per configurare l'altezza dell'area dell'editor TinyMCE (valore predefinito: 600px).
-* Nuovo: visualizzazione nelle impostazioni dell'orario dell'ultimo controllo automatico degli aggiornamenti e della prossima data/ora programmata.
-
-= 1.3.2 =
-* Nuovo: aggiornato il bundle di default di TinyMCE 8 alla versione 8.8.2 (ultima release stabile).
-* Nuovo: in modalità CDN l'editor punta automaticamente all'ultima versione disponibile della major selezionata.
-* Nuovo: banner informativo in amministrazione per notificare la disponibilità di una nuova versione di TinyMCE quando gli aggiornamenti automatici sono disattivati, con opzione per nascondere il messaggio fino al rilascio di una versione successiva.
-* Nuovo: correzione automatica dei link esterni inseriti nell'editor senza protocollo (es. `marcoborla.com` viene corretto in `https://marcoborla.com`), lasciando intatti i link relativi (es. `/nomecartella/immagine.jpg`) e le ancore.
-* Nuovo: aggiornate le impostazioni predefinite del plugin. Di default viene ora selezionato TinyMCE 8, abilitato l'uso dell'editor in modalità Locale (offline), attivato il controllo/installazione automatico degli aggiornamenti e disattivato Gutenberg abilitando l'editor classico moderno per articoli e pagine.
-
-= 1.3.1 =
-* Fix: localizzazione dell'editor basata sulla lingua impostata in WordPress (es. italiano `it_IT` -> `it`), con pacchetto lingua nativo TinyMCE incluso.
-* Fix: disattivato il sottomenu contestuale personalizzato di TinyMCE (`contextmenu: false`), ripristinando il menu nativo del browser al click destro nell'area di testo.
-* Fix: attivato il controllo ortografico nativo del browser (`browser_spellcheck: true`), consentendo al browser di evidenziare gli errori di ortografia ed esporre le correzioni nel menu contestuale.
-
-= 1.3.0 =
-* Nuovo: è ora possibile scegliere tra TinyMCE 7 e TinyMCE 8 dalle impostazioni. Il bundle incluso nello zip del plugin contiene entrambe le major (7.9.3 e 8.8.2); il controllo/download di nuove versioni opera sulla major selezionata, senza mai proporre un salto automatico di major.
-* Nuovo: bottone "Elimina versione locale scaricata", visibile quando la sorgente è impostata su CDN ed esiste comunque una versione scaricata in precedenza per la major selezionata; elimina solo la copia in wp-content/uploads, il bundle incluso nel plugin resta sempre disponibile come fallback.
-* Le versioni locali scaricate per major diverse vengono mantenute in sottocartelle separate, così passare da 7 a 8 (e viceversa) non comporta la perdita dei download già effettuati.
-
-= 1.2.1 =
-* Nuovo: il plugin controlla ora le nuove versioni pubblicate sul repository GitHub ufficiale e si integra con il meccanismo nativo di aggiornamento dei plugin di WordPress (stessa interfaccia "Aggiornamento disponibile" e bottone "Aggiorna ora" dei plugin della directory ufficiale; compatibile con gli auto-update automatici dei plugin).
-* Fix: corretta la costante di versione interna del plugin, che non era allineata alla versione dichiarata nell'header e in questo changelog.
-
-= 1.2.0 =
-* Fix: lo spinner accanto a "Controlla aggiornamenti" non è più visibile in modo permanente; appare solo durante un controllo o un download in corso.
-* Nuovo: supporto completo alla lingua inglese (file di traduzione en_US e en_GB inclusi in `languages/`).
-* Modifica: il caricamento delle traduzioni è stato spostato dall'hook `plugins_loaded` a `init`, in linea con le raccomandazioni WordPress più recenti.
-
-= 1.1.0 =
-* Nuovo: sorgente dell'editor selezionabile tra CDN (jsDelivr) e Locale (offline), per ambienti senza accesso a CDN esterni.
-* Nuovo: bundle TinyMCE 7.9.3 incluso direttamente nel plugin per l'uso offline immediato.
-* Nuovo: controllo manuale e automatico (opzionale, disattivato di default) di nuove versioni di TinyMCE, con download e installazione in un clic dalle impostazioni.
-* Fix: il CSS dell'editor a blocchi non viene più rimosso dal frontend per contenuti che contengono già blocchi Gutenberg salvati, anche quando l'editor classico è forzato per quel tipo di contenuto.
-* Fix: gli script legacy di TinyMCE non vengono più svuotati quando si lavora in Gutenberg, così il blocco nativo "Editor classico" continua a funzionare correttamente.
-* Modifica: "Disattiva Gutenberg" e i tipi di contenuto associati sono ora disattivati di default (opt-in), per evitare modifiche impreviste all'attivazione del plugin.
-
-= 1.0.0 =
-* Prima versione pubblica.
+* Initial structured release.
