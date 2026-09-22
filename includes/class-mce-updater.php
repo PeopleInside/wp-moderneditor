@@ -120,6 +120,37 @@ class MCE_Updater {
 	}
 
 	/**
+	 * Versione REALMENTE installata al momento della chiamata.
+	 *
+	 * NON usa direttamente la costante MCE_PLUGIN_VERSION: quella viene
+	 * fissata una sola volta all'hook "plugins_loaded" e resta invariata per
+	 * tutta la durata del processo PHP. Se un aggiornamento di QUESTO plugin
+	 * avviene nello stesso processo che sta ricontrollando gli aggiornamenti
+	 * (caso tipico di wp-cron con gli auto-update, o di un batch WP-CLI tipo
+	 * "wp plugin update --all"), il file su disco viene già riscritto con la
+	 * nuova versione ma la costante resta quella vecchia: il confronto
+	 * risulterebbe erroneamente "c'è un aggiornamento" anche subito dopo
+	 * aver appena installato l'ultima versione, causando un secondo
+	 * aggiornamento identico e inutile.
+	 *
+	 * $transient->checked[$basename] viene invece ripopolato da WordPress
+	 * ogni volta, leggendo l'header del plugin fresco da disco (get_plugins()),
+	 * subito prima di invocare questo filtro: è quindi sempre allineato alla
+	 * versione davvero installata, anche all'interno dello stesso processo.
+	 * La costante resta come solo fallback per il caso limite in cui
+	 * "checked" non sia valorizzato.
+	 *
+	 * @param object $transient
+	 * @param string $basename
+	 */
+	private function installed_version( $transient, string $basename ): string {
+		if ( isset( $transient->checked[ $basename ] ) && '' !== $transient->checked[ $basename ] ) {
+			return (string) $transient->checked[ $basename ];
+		}
+		return MCE_PLUGIN_VERSION;
+	}
+
+	/**
 	 * Nome REALE della cartella in cui il plugin è installato. È quello che
 	 * conta al momento di rinominare il pacchetto scaricato: se rinominassimo
 	 * sempre in PLUGIN_SLUG mentre il plugin vive, ad esempio, in
@@ -327,12 +358,14 @@ class MCE_Updater {
 			$transient->no_update = array();
 		}
 
-		if ( ! version_compare( $release['version'], MCE_PLUGIN_VERSION, '>' ) ) {
+		$installed_version = $this->installed_version( $transient, $basename );
+
+		if ( ! version_compare( $release['version'], $installed_version, '>' ) ) {
 			// Nessun aggiornamento: se per qualche motivo un update era stato
 			// segnalato in precedenza (es. rollback manuale), lo rimuoviamo,
 			// e ci dichiariamo comunque "noti" tramite no_update.
 			unset( $transient->response[ $basename ] );
-			$transient->no_update[ $basename ] = $this->build_item( MCE_PLUGIN_VERSION, '', $release['html_url'] );
+			$transient->no_update[ $basename ] = $this->build_item( $installed_version, '', $release['html_url'] );
 			return $transient;
 		}
 
