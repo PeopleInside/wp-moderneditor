@@ -4,7 +4,7 @@ Tags: tinymce, classic editor, gutenberg, dark mode, wysiwyg, editor
 Requires at least: 6.0
 Tested up to: 7.1.1
 Requires PHP: 7.4
-Stable tag: 1.3.8
+Stable tag: 1.3.9
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -24,6 +24,9 @@ Modern Editor solves two common problems:
 Yes. TinyMCE is distributed by Tiny Technologies under the GNU GPLv2 or later license. The files included in the plugin (and those downloadable from the settings) come directly from the official "tinymce" package published on npm, without any modifications to the code. The GPL license is explicitly declared in the editor initialization (`license_key: 'gpl'`).
 
 == Changelog ==
+
+= 1.3.8 =
+* Improved update - fix
 
 = 1.3.8 =
 * Update release workflow to include version in ZIP name.
