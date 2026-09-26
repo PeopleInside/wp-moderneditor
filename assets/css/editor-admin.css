@@ -253,6 +253,48 @@ span.mce-item-anchor:empty::before {
 	pointer-events: auto !important;
 }
 
+/* 7. Stili per l'allineamento immagini e scorrimento del testo a lato */
+.mce-content-body img.alignleft,
+.mce-content-body .alignleft,
+.tox-edit-area img.alignleft,
+img.alignleft {
+	float: left !important;
+	margin: 0.5em 1.5em 0.5em 0 !important;
+	max-width: 100%;
+	height: auto;
+}
+
+.mce-content-body img.alignright,
+.mce-content-body .alignright,
+.tox-edit-area img.alignright,
+img.alignright {
+	float: right !important;
+	margin: 0.5em 0 0.5em 1.5em !important;
+	max-width: 100%;
+	height: auto;
+}
+
+.mce-content-body img.aligncenter,
+.mce-content-body .aligncenter,
+.tox-edit-area img.aligncenter,
+img.aligncenter {
+	display: block !important;
+	margin-left: auto !important;
+	margin-right: auto !important;
+	clear: both !important;
+	max-width: 100%;
+	height: auto;
+	float: none !important;
+}
+
+.mce-content-body img.alignnone,
+.mce-content-body .alignnone,
+.tox-edit-area img.alignnone,
+img.alignnone {
+	float: none;
+	margin: 0.5em 0;
+}
+
 
 
 

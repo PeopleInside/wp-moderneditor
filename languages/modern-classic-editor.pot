@@ -1,10 +1,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Modern Classic Editor 1.2.0\n"
+"Project-Id-Version: Modern Classic Editor 1.4.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-06-26 13:42+0000\n"
-"PO-Revision-Date: 2026-06-26 13:42+0000\n"
+"POT-Creation-Date: 2026-09-26 15:00+0000\n"
+"PO-Revision-Date: 2026-09-26 15:00+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -12,216 +12,474 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "X-Domain: modern-classic-editor\n"
 
-#: includes/class-mce-settings.php:310
+#: includes/class-mce-gutenberg.php:319
+msgid "%s (Blocchi)"
+msgstr ""
+
+#: includes/class-mce-gutenberg.php:310
+msgid "%s (Classico)"
+msgstr ""
+
+#: includes/class-mce-settings.php:542
+msgid "Abilita controlli per allineare le immagini (a sinistra, a destra, al centro) e scrivere testo a lato con scorrimento"
+msgstr ""
+
+#: includes/class-mce-settings.php:283
+msgid "Abilita la gestione dell'editor classico (Modern Classic Editor) per i tipi di contenuto selezionati"
+msgstr ""
+
+#: includes/class-mce-gutenberg.php:270
+msgid "Aggiungi (Blocchi)"
+msgstr ""
+
+#: includes/class-mce-gutenberg.php:262
+msgid "Aggiungi (Classico)"
+msgstr ""
+
+#: includes/class-mce-gutenberg.php:269
+msgid "Aggiungi nuovo (%s - Blocchi)"
+msgstr ""
+
+#: includes/class-mce-gutenberg.php:261
+msgid "Aggiungi nuovo (%s - Classico)"
+msgstr ""
+
+#: includes/class-mce-settings.php:538
+msgid "Allineamento immagini e testo a lato"
+msgstr ""
+
+#: includes/class-mce-settings.php:504
+msgid "Altezza dell'area di modifica dell'editor in pixel (predefinito: 600)."
+msgstr ""
+
+#: includes/class-mce-settings.php:491
+msgid "Altezza dell'editor (px)"
+msgstr ""
+
+#: includes/class-mce-gutenberg.php:371
+msgid "Assicurati di aver salvato le modifiche prima di cambiare editor. Vuoi passare all'editor a blocchi?"
+msgstr ""
+
+#: includes/class-mce-settings.php:423
+msgid "Attivato di default: controlla regolarmente in background se è disponibile una nuova versione. Puoi comunque controllare e scaricare manualmente con i bottoni qui sopra."
+msgstr ""
+
+#: includes/class-mce-settings.php:529
 msgid "Barra dei menu"
 msgstr ""
 
-#: includes/class-mce-settings.php:233
-msgid ""
-"CDN (jsDelivr) — sempre l'ultima versione disponibile, richiede una "
-"connessione esterna funzionante"
+#: includes/class-mce-settings.php:368
+msgid "CDN (jsDelivr) — sempre l'ultima versione disponibile, richiede una connessione esterna funzionante"
 msgstr ""
 
-#: includes/class-mce-settings.php:294
+#: includes/class-mce-settings.php:513
 msgid "Chiaro"
 msgstr ""
 
-#: includes/class-mce-settings.php:305
+#: includes/class-mce-settings.php:524
 msgid "Completa (tutte le funzioni disponibili)"
 msgstr ""
 
-#: includes/class-mce-settings.php:240
-msgid ""
-"Con la modalità locale l'editor funziona anche se il sito non può "
-"raggiungere CDN esterni (firewall, ambienti air-gapped, policy di sicurezza "
-"restrittive)."
+#: includes/class-mce-settings.php:375
+msgid "Con la modalità locale l'editor funziona anche se il sito non può raggiungere CDN esterni (firewall, ambienti air-gapped, policy di sicurezza restrittive)."
 msgstr ""
 
-#: includes/class-mce-settings.php:188
-msgid ""
-"Configura l'editor classico moderno (TinyMCE 7) e la disattivazione di "
-"Gutenberg."
+#: includes/class-mce-settings.php:271
+msgid "Configura l'editor classico moderno (TinyMCE) e la disattivazione di Gutenberg."
 msgstr ""
 
-#: includes/class-mce-settings.php:262
+#: includes/class-mce-settings.php:310
+msgid "Consenti agli utenti di scegliere e cambiare l'editor per ogni articolo o pagina"
+msgstr ""
+
+#: includes/class-mce-settings.php:306
+msgid "Consenti cambio editor"
+msgstr ""
+
+#: includes/class-mce-settings.php:401
 msgid "Controlla aggiornamenti"
 msgstr ""
 
-#: includes/class-mce-settings.php:278
-msgid ""
-"Controlla automaticamente una volta al giorno se è disponibile una nuova "
-"versione e scaricala in background"
+#: includes/class-mce-settings.php:420
+msgid "Controlla automaticamente una volta al giorno se è disponibile una nuova versione e scaricala in background"
 msgstr ""
 
-#: includes/class-mce-settings.php:274
+#: includes/class-mce-updater.php:182
+msgid "Controllo aggiornamenti rinviato dopo un errore recente."
+msgstr ""
+
+#: includes/class-mce-settings.php:416
 msgid "Controllo automatico"
 msgstr ""
 
-#: includes/class-mce-settings.php:167
+#: includes/class-mce-settings.php:244
 msgid "Controllo in corso…"
 msgstr ""
 
-#: includes/class-mce-settings.php:228
+#: includes/class-mce-settings.php:363
 msgid "Da dove caricare TinyMCE"
 msgstr ""
 
-#: includes/class-mce-settings.php:196
-msgid "Disattiva Gutenberg"
+#: includes/class-mce-settings.php:300
+msgid "Determina quale editor viene aperto di default quando si crea o si modifica un articolo o pagina."
 msgstr ""
 
-#: includes/class-mce-settings.php:281
-msgid ""
-"Disattivato di default: nessuna richiesta esterna viene effettuata senza il "
-"tuo consenso esplicito. Anche con questa opzione disattivata puoi sempre "
-"controllare e scaricare manualmente con i bottoni qui sopra."
+#: includes/class-mce-settings.php:173
+msgid "Download automatico dell'editor fallito: %s. Verrà usato il bundle locale predefinito."
 msgstr ""
 
-#: includes/class-mce-settings.php:168
+#: includes/class-mce-settings.php:245
 msgid "Download in corso, potrebbe richiedere qualche secondo…"
 msgstr ""
 
-#: includes/class-mce-vendor.php:294
+#: includes/class-mce-vendor.php:501
 msgid "Download non riuscito per il file: %s"
 msgstr ""
 
-#: includes/class-mce-settings.php:287
+#: includes/class-mce-settings.php:488
 msgid "Editor TinyMCE moderno"
 msgstr ""
 
-#: includes/class-mce-settings.php:193
+#: includes/class-mce-settings.php:297
 msgid "Editor a blocchi (Gutenberg)"
 msgstr ""
 
-#: includes/class-mce-settings.php:304
-msgid "Estesa (font, colori, tabelle, allineamento)"
-msgstr ""
-
-#: includes/class-mce-vendor.php:347
-msgid "Il download è incompleto: alcuni file richiesti risultano mancanti."
-msgstr ""
-
-#: includes/class-mce-vendor.php:215
-msgid "Il registro npm ha risposto con codice %d."
-msgstr ""
-
-#: includes/class-mce-vendor.php:314
-msgid "Impossibile salvare il file scaricato: %s"
-msgstr ""
-
-#: includes/class-mce-settings.php:237
-msgid ""
-"Locale (offline) — file inclusi nel plugin o scaricati in precedenza, "
-"nessuna richiesta esterna durante l'uso dell'editor"
-msgstr ""
-
-#: includes/class-mce-settings.php:66 includes/class-mce-settings.php:67
-#: includes/class-mce-settings.php:187
-msgid "Modern Classic Editor"
-msgstr ""
-
-#: includes/class-mce-settings.php:314
-msgid "Mostra la barra dei menu (File, Modifica, Inserisci, ecc.)"
-msgstr ""
-
-#: includes/class-mce-vendor.php:234
-msgid "Nessuna versione 7.x trovata su npm."
-msgstr ""
-
-#: includes/class-mce-vendor.php:258
-msgid "Numero di versione non valido."
-msgstr ""
-
-#: includes/class-mce-vendor.php:371 includes/class-mce-vendor.php:405
-msgid "Permessi insufficienti."
-msgstr ""
-
-#: includes/class-mce-vendor.php:222
-msgid "Risposta del registro npm non valida."
-msgstr ""
-
-#: includes/class-mce-settings.php:265
-msgid "Scarica e installa l'ultima versione"
-msgstr ""
-
-#: includes/class-mce-settings.php:295
-msgid "Scuro"
+#: includes/class-mce-settings.php:276
+msgid "Editor a blocchi (Gutenberg) e Scelta dell'Editor"
 msgstr ""
 
 #: includes/class-mce-settings.php:293
+msgid "Editor classico (Modern Classic Editor)"
+msgstr ""
+
+#: includes/class-mce-gutenberg.php:344
+msgid "Editor in uso"
+msgstr ""
+
+#: includes/class-mce-settings.php:288
+msgid "Editor predefinito"
+msgstr ""
+
+#: includes/class-mce-settings.php:407
+msgid "Elimina versione locale scaricata"
+msgstr ""
+
+#: includes/class-mce-settings.php:250
+msgid "Eliminare i file dell'editor offline? Se confermi, verrà usata la CDN fino al prossimo download manuale."
+msgstr ""
+
+#: includes/class-mce-settings.php:246
+msgid "Eliminazione in corso…"
+msgstr ""
+
+#: includes/class-mce-settings.php:523
+msgid "Estesa (font, colori, tabelle, allineamento)"
+msgstr ""
+
+#: includes/class-mce-settings.php:279
+msgid "Gestione Gutenberg"
+msgstr ""
+
+#: includes/class-mce-updater.php:214
+msgid "GitHub ha risposto con codice %d."
+msgstr ""
+
+#: includes/class-mce-settings.php:469
+msgid "Il controllo automatico degli aggiornamenti è disattivato."
+msgstr ""
+
+#: includes/class-mce-vendor.php:554
+msgid "Il download è incompleto: alcuni file richiesti risultano mancanti."
+msgstr ""
+
+#: includes/class-mce-updater.php:488
+msgid "Il pacchetto di aggiornamento non proviene da un host GitHub attendibile: download bloccato."
+msgstr ""
+
+#: includes/class-mce-vendor.php:401
+msgid "Il registro npm ha risposto con codice %d."
+msgstr ""
+
+#: includes/class-mce-settings.php:160
+msgid "Impossibile controllare l'ultima versione per il download automatico: %s. Verrà usato il bundle locale predefinito."
+msgstr ""
+
+#: includes/class-mce-vendor.php:312
+msgid "Impossibile eliminare i file dell'editor inclusi nel plugin."
+msgstr ""
+
+#: includes/class-mce-vendor.php:294
+msgid "Impossibile eliminare la cartella della versione locale scaricata."
+msgstr ""
+
+#: includes/class-mce-updater.php:541
+msgid "Impossibile rinominare la cartella del pacchetto scaricato."
+msgstr ""
+
+#: includes/class-mce-vendor.php:521
+msgid "Impossibile salvare il file scaricato: %s"
+msgstr ""
+
+#: modern-classic-editor.php:93
+msgid "Impostazioni"
+msgstr ""
+
+#: includes/class-mce-settings.php:353
+msgid "Le versioni locali scaricate per ciascuna major restano salvate separatamente: puoi passare da 7 a 8 e viceversa senza perdere i download già effettuati. La licenza GPL (uso gratuito) si applica a entrambe le major."
+msgstr ""
+
+#: includes/class-mce-settings.php:372
+msgid "Locale (offline) — file inclusi nel plugin o scaricati in precedenza, nessuna richiesta esterna durante l'uso dell'editor"
+msgstr ""
+
+#: includes/class-mce-settings.php:341
+msgid "Major"
+msgstr ""
+
+#: includes/class-mce-settings.php:91 #: includes/class-mce-settings.php:92 #: includes/class-mce-settings.php:270
+msgid "Modern Classic Editor"
+msgstr ""
+
+#: includes/class-mce-settings.php:605
+msgid "Modern Classic Editor:"
+msgstr ""
+
+#: includes/class-mce-gutenberg.php:228
+msgid "Modifica &#8220;%s&#8221; nell'editor a blocchi"
+msgstr ""
+
+#: includes/class-mce-gutenberg.php:222
+msgid "Modifica &#8220;%s&#8221; nell'editor classico"
+msgstr ""
+
+#: includes/class-mce-gutenberg.php:229
+msgid "Modifica (Blocchi)"
+msgstr ""
+
+#: includes/class-mce-gutenberg.php:223
+msgid "Modifica (Classico)"
+msgstr ""
+
+#: includes/class-mce-settings.php:533
+msgid "Mostra la barra dei menu (File, Modifica, Inserisci, ecc.)"
+msgstr ""
+
+#: includes/class-mce-settings.php:545
+msgid "Mostra una barra di strumenti rapida quando selezioni un'immagine per impostare il testo a lato (sinistra o destra con wrap del testo), e applica automaticamente gli stili e le classi di allineamento WordPress."
+msgstr ""
+
+#: includes/class-mce-settings.php:620
+msgid "Nascondi fino a nuova versione"
+msgstr ""
+
+#: includes/class-mce-settings.php:450
+msgid "Nessun controllo automatico ancora eseguito."
+msgstr ""
+
+#: includes/class-mce-updater.php:305
+msgid "Nessun pacchetto scaricabile trovato per questa release."
+msgstr ""
+
+#: includes/class-mce-updater.php:207
+msgid "Nessuna release pubblicata su GitHub."
+msgstr ""
+
+#: includes/class-mce-vendor.php:425
+msgid "Nessuna versione %s.x trovata su npm."
+msgstr ""
+
+#: includes/class-mce-settings.php:251 #: includes/class-mce-settings.php:387
+msgid "Nessuna versione attualmente disponibile offline. L'editor Classic userà automaticamente la CDN."
+msgstr ""
+
+#: includes/class-mce-vendor.php:318
+msgid "Nessuna versione locale o inclusa nel plugin trovata da eliminare per questa major."
+msgstr ""
+
+#: includes/class-mce-settings.php:462
+msgid "Non pianificato"
+msgstr ""
+
+#: includes/class-mce-updater.php:230
+msgid "Numero di versione della release non valido."
+msgstr ""
+
+#: includes/class-mce-vendor.php:465
+msgid "Numero di versione non valido."
+msgstr ""
+
+#: includes/class-mce-gutenberg.php:372
+msgid "Passa all'editor a blocchi (Gutenberg)"
+msgstr ""
+
+#: includes/class-mce-settings.php:655 #: includes/class-mce-vendor.php:583 #: includes/class-mce-vendor.php:619
+msgid "Permessi insufficienti."
+msgstr ""
+
+#: includes/class-mce-settings.php:456
+msgid "Prossimo controllo programmato:"
+msgstr ""
+
+#: includes/class-mce-gutenberg.php:368
+msgid "Puoi passare all'editor a blocchi Gutenberg per questo articolo."
+msgstr ""
+
+#: includes/class-mce-settings.php:313
+msgid "Quando attivo, consente di scegliere tra Editor Classico e Gutenberg: aggiunge i pulsanti separati \"Aggiungi (Classico)\" e \"Aggiungi (Blocchi)\" nel menu e nella barra in alto, i link \"Modifica (Classico)\" e \"Modifica (Blocchi)\" negli elenchi, e un box nella barra laterale dell'editor per passare da un editor all'altro."
+msgstr ""
+
+#: includes/class-mce-settings.php:439
+msgid "Registro dei controlli automatici:"
+msgstr ""
+
+#: includes/class-mce-vendor.php:408
+msgid "Risposta del registro npm non valida."
+msgstr ""
+
+#: includes/class-mce-updater.php:223
+msgid "Risposta di GitHub non valida."
+msgstr ""
+
+#: includes/class-mce-settings.php:404
+msgid "Scarica e installa l'ultima versione"
+msgstr ""
+
+#: includes/class-mce-settings.php:514
+msgid "Scuro"
+msgstr ""
+
+#: includes/class-mce-settings.php:512
 msgid "Segui il sistema operativo"
 msgstr ""
 
-#: includes/class-mce-settings.php:171
+#: modern-classic-editor.php:93
+msgid "Settings"
+msgstr ""
+
+#: includes/class-mce-settings.php:249
 msgid "Si è verificato un errore. Riprova."
 msgstr ""
 
-#: includes/class-mce-settings.php:219
-msgid "Solo i tipi selezionati torneranno all'editor classico."
+#: includes/class-mce-settings.php:332
+msgid "Solo i tipi selezionati useranno la gestione dell'editor classico."
 msgstr ""
 
-#: includes/class-mce-settings.php:225
+#: includes/class-mce-settings.php:360
 msgid "Sorgente dell'editor TinyMCE"
 msgstr ""
 
-#: includes/class-mce-settings.php:169
+#: includes/class-mce-settings.php:247
 msgid "Stai già usando l'ultima versione disponibile."
 msgstr ""
 
-#: includes/class-mce-settings.php:303
+#: includes/class-mce-gutenberg.php:363
+msgid "Stai usando:"
+msgstr ""
+
+#: includes/class-mce-settings.php:522
 msgid "Standard (come WordPress di default)"
 msgstr ""
 
-#: includes/class-mce-settings.php:290
+#: includes/class-mce-settings.php:509
 msgid "Tema (dark mode)"
 msgstr ""
 
-#: includes/class-mce-vendor.php:389
+#: includes/class-mce-vendor.php:602
 msgid "TinyMCE %s scaricato e installato correttamente."
 msgstr ""
 
-#: includes/class-mce-settings.php:325
-msgid ""
-"TinyMCE è distribuito sotto licenza GPLv2+ (GNU General Public License). In "
-"modalità CDN viene caricato da jsDelivr; in modalità locale i file "
-"(identici, non modificati) provengono dal pacchetto ufficiale \"tinymce\" su"
-" npm, incluso nel plugin o scaricato da questa pagina. Nessun account o API "
-"key è richiesto in entrambi i casi."
+#: includes/class-mce-settings.php:346
+msgid "TinyMCE 7 (consigliata per compatibilità con configurazioni e plugin di terze parti esistenti)"
 msgstr ""
 
-#: includes/class-mce-settings.php:205
+#: includes/class-mce-settings.php:350
+msgid "TinyMCE 8 (più recente; verifica gli embed e i contenuti incollati dopo il passaggio, la sanitizzazione interna è più stringente)"
+msgstr ""
+
+#: includes/class-mce-settings.php:556
+msgid "TinyMCE è distribuito sotto licenza GPLv2+ (GNU General Public License). In modalità CDN viene caricato da jsDelivr; in modalità locale i file (identici, non modificati) provengono dal pacchetto ufficiale \"tinymce\" su npm, incluso nel plugin o scaricato da questa pagina. Nessun account o API key è richiesto in entrambi i casi."
+msgstr ""
+
+#: includes/class-mce-settings.php:318
 msgid "Tipi di contenuto"
 msgstr ""
 
-#: includes/class-mce-settings.php:300
+#: includes/class-mce-settings.php:519
 msgid "Toolbar"
 msgstr ""
 
-#: includes/class-mce-settings.php:200
-msgid ""
-"Usa l'editor classico invece dell'editor a blocchi per i tipi di contenuto "
-"selezionati qui sotto"
+#: includes/class-mce-vendor.php:666
+msgid "Tutti i file dell'editor offline per questa major sono stati eliminati. L'editor Classic userà automaticamente la CDN."
 msgstr ""
 
-#: includes/class-mce-settings.php:253
+#: includes/class-mce-settings.php:443
+msgid "Ultimo controllo automatico:"
+msgstr ""
+
+#: includes/class-mce-settings.php:476
+msgid "Ultimo controllo eseguito in precedenza: %s"
+msgstr ""
+
+#: includes/class-mce-settings.php:617
+msgid "Vai alle Impostazioni e Aggiorna"
+msgstr ""
+
+#: includes/class-mce-settings.php:252 #: includes/class-mce-settings.php:391
 msgid "Versione attualmente disponibile offline: %1$s (%2$s)"
 msgstr ""
 
-#: includes/class-mce-settings.php:248
+#: includes/class-mce-settings.php:338
+msgid "Versione di TinyMCE"
+msgstr ""
+
+#: includes/class-mce-settings.php:383
 msgid "Versione locale disponibile"
 msgstr ""
 
-#: includes/class-mce-vendor.php:376
+#: includes/class-mce-vendor.php:668
+msgid "Versione locale scaricata eliminata. Verrà nuovamente usato il bundle incluso nel plugin."
+msgstr ""
+
+#: includes/class-mce-vendor.php:588
 msgid "Versione non specificata."
 msgstr ""
 
-#: includes/class-mce-settings.php:255
+#: includes/class-mce-settings.php:297
+msgid "apre l'editor a blocchi standard di WordPress"
+msgstr ""
+
+#: includes/class-mce-settings.php:293
+msgid "apre l'editor classico moderno TinyMCE"
+msgstr ""
+
+#: includes/class-mce-settings.php:253 #: includes/class-mce-settings.php:393
 msgid "incluse nel plugin"
 msgstr ""
 
-#: includes/class-mce-settings.php:255 includes/class-mce-settings.php:255
+#: includes/class-mce-settings.php:254 #: includes/class-mce-settings.php:393 #: includes/class-mce-settings.php:393
 msgid "scaricata"
 msgstr ""
 
-#: includes/class-mce-settings.php:170
+#: includes/class-mce-settings.php:609
+msgid "È disponibile una nuova versione di TinyMCE (%2$s) rispetto a quella in uso (%1$s). Gli aggiornamenti automatici sono disattivati: aggiornare l'editor permette di correggere bug e importanti problemi di sicurezza."
+msgstr ""
+
+#: includes/class-mce-settings.php:248
 msgid "È disponibile una nuova versione: "
+msgstr ""
+
+#: modern-classic-editor.php:5
+msgid "Disattiva Gutenberg e sostituisce l'editor classico di WordPress con TinyMCE moderno (7 o 8, a scelta), caricato da CDN oppure offline (bundlato/scaricabile), con supporto dark mode e toolbar avanzata."
+msgstr ""
+
+#: includes/class-mce-gutenberg.php:364
+msgid "Passa all'editor classico (Modern Classic Editor)"
+msgstr ""
+
+#: includes/class-mce-gutenberg.php:366
+msgid "Puoi passare all'editor classico Modern Classic Editor per questo articolo."
+msgstr ""
+
+#: includes/class-mce-gutenberg.php:367
+msgid "Assicurati di aver salvato le modifiche prima di cambiare editor. Vuoi passare all'editor classico?"
 msgstr ""

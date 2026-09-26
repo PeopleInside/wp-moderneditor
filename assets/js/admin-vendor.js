@@ -63,12 +63,18 @@
 				return;
 			}
 			if ( 'none' === source || ! version ) {
-				activeStatusTextEl.textContent = 'Nessuna versione attualmente disponibile offline. L\'editor Classic userà automaticamente la CDN.';
+				activeStatusTextEl.textContent = ( settings.i18n && settings.i18n.noOfflineVersion ) || 'Nessuna versione attualmente disponibile offline. L\'editor Classic userà automaticamente la CDN.';
 				activeVersionEl = null;
 				activeSourceEl = null;
 			} else {
-				var sourceLabel = 'bundled' === source ? 'incluse nel plugin' : ( activeSourceEl && activeSourceEl.dataset.downloadedLabel || 'scaricata' );
-				activeStatusTextEl.innerHTML = 'Versione attualmente disponibile offline: <strong id="mce-active-version">' + escapeHtml( version ) + '</strong> (<span id="mce-active-source" data-downloaded-label="scaricata">' + escapeHtml( sourceLabel ) + '</span>)';
+				var downloadedText = ( settings.i18n && settings.i18n.downloaded ) || 'scaricata';
+				var bundledText = ( settings.i18n && settings.i18n.bundled ) || 'incluse nel plugin';
+				var sourceLabel = 'bundled' === source ? bundledText : ( activeSourceEl && activeSourceEl.dataset.downloadedLabel || downloadedText );
+				var template = ( settings.i18n && settings.i18n.activeOfflineTemplate ) || 'Versione attualmente disponibile offline: %1$s (%2$s)';
+				var html = template
+					.replace( '%1$s', '<strong id="mce-active-version">' + escapeHtml( version ) + '</strong>' )
+					.replace( '%2$s', '<span id="mce-active-source" data-downloaded-label="' + escapeHtml( downloadedText ) + '">' + escapeHtml( sourceLabel ) + '</span>' );
+				activeStatusTextEl.innerHTML = html;
 				// Re-bind elements since we recreated them
 				activeVersionEl = document.getElementById( 'mce-active-version' );
 				activeSourceEl = document.getElementById( 'mce-active-source' );

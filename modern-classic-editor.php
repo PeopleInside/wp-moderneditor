@@ -3,7 +3,7 @@
  * Plugin Name:       Modern Classic Editor
  * Plugin URI:         https://github.com/PeopleInside/wp-moderneditor
  * Description:       Disattiva Gutenberg e sostituisce l'editor classico di WordPress con TinyMCE moderno (7 o 8, a scelta), caricato da CDN oppure offline (bundlato/scaricabile), con supporto dark mode e toolbar avanzata.
- * Version:           1.3.9
+ * Version:           1.4.0
  * Requires at least: 6.0
  * Requires PHP:       7.4
  * Author:             PeopleInside
@@ -17,7 +17,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'MCE_PLUGIN_VERSION', '1.3.9' );
+define( 'MCE_PLUGIN_VERSION', '1.4.0' );
 define( 'MCE_PLUGIN_FILE', __FILE__ );
 define( 'MCE_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'MCE_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
@@ -80,7 +80,42 @@ final class Modern_Classic_Editor {
 		}
 
 		register_activation_hook( MCE_PLUGIN_FILE, array( $this, 'on_activate' ) );
+		add_action( 'plugins_loaded', array( $this, 'load_textdomain' ) );
 		add_action( 'init', array( $this, 'load_textdomain' ) );
+		add_filter( 'plugin_locale', array( $this, 'filter_plugin_locale' ), 10, 2 );
+		add_filter( 'load_textdomain_mofile', array( $this, 'filter_load_textdomain_mofile' ), 10, 2 );
+	}
+
+	/**
+	 * Mappa le varianti di locale inglese (es. en_CA, en_AU, en_NZ) su en_US o en_GB se necessario.
+	 */
+	public function filter_plugin_locale( string $locale, string $domain ): string {
+		if ( 'modern-classic-editor' === $domain ) {
+			$clean = strtolower( $locale );
+			if ( 0 === strpos( $clean, 'en' ) ) {
+				return ( 'en_gb' === $clean ) ? 'en_GB' : 'en_US';
+			}
+		}
+		return $locale;
+	}
+
+	/**
+	 * Garantisce che un file .mo inglese valido venga caricato se la specifica variante non è presente.
+	 */
+	public function filter_load_textdomain_mofile( string $mofile, string $domain ): string {
+		if ( 'modern-classic-editor' === $domain && ! file_exists( $mofile ) ) {
+			$locale = function_exists( 'determine_locale' ) ? determine_locale() : ( function_exists( 'get_user_locale' ) ? get_user_locale() : get_locale() );
+			$clean  = strtolower( $locale );
+			if ( 0 === strpos( $clean, 'en' ) ) {
+				$fallback = ( 'en_gb' === $clean )
+					? MCE_PLUGIN_DIR . 'languages/modern-classic-editor-en_GB.mo'
+					: MCE_PLUGIN_DIR . 'languages/modern-classic-editor-en_US.mo';
+				if ( file_exists( $fallback ) ) {
+					return $fallback;
+				}
+			}
+		}
+		return $mofile;
 	}
 
 	/**
@@ -113,7 +148,27 @@ final class Modern_Classic_Editor {
 	}
 
 	public function load_textdomain(): void {
+		$locale = function_exists( 'determine_locale' ) ? determine_locale() : ( function_exists( 'get_user_locale' ) ? get_user_locale() : get_locale() );
+		$is_it  = ( 0 === strpos( strtolower( $locale ), 'it' ) );
+
+		if ( ! $is_it && is_textdomain_loaded( 'modern-classic-editor' ) ) {
+			if ( __( 'Impostazioni', 'modern-classic-editor' ) === 'Impostazioni' ) {
+				unload_textdomain( 'modern-classic-editor' );
+			}
+		}
+
 		load_plugin_textdomain( 'modern-classic-editor', false, dirname( plugin_basename( MCE_PLUGIN_FILE ) ) . '/languages' );
+
+		if ( ! $is_it && ! is_textdomain_loaded( 'modern-classic-editor' ) ) {
+			$clean = strtolower( $locale );
+			$mo    = ( 'en_gb' === $clean )
+				? MCE_PLUGIN_DIR . 'languages/modern-classic-editor-en_GB.mo'
+				: MCE_PLUGIN_DIR . 'languages/modern-classic-editor-en_US.mo';
+
+			if ( file_exists( $mo ) ) {
+				load_textdomain( 'modern-classic-editor', $mo );
+			}
+		}
 	}
 }
 

@@ -293,6 +293,7 @@ class MCE_Editor {
 				'editorBaseUrl'         => untrailingslashit( $base_url ),
 				'language'              => $lang,
 				'languageUrl'           => $language_url,
+				'enableImageAlignment'  => (bool) ( $settings['enable_image_alignment'] ?? true ),
 			)
 		);
 	}
@@ -428,7 +429,9 @@ class MCE_Editor {
 		$mceInit['media_live_embeds']           = true;
 		$mceInit['convert_urls']                = false;
 		$mceInit['relative_urls']               = false;
-		$mceInit['extended_valid_elements']     = 'iframe[src|title|width|height|allowfullscreen|frameborder|style|class|id|loading|referrerpolicy],p[style|class|id|align],span[style|class|id],img[*]';
+		$mceInit['extended_valid_elements']     = 'iframe[src|title|width|height|allowfullscreen|frameborder|style|class|id|loading|referrerpolicy],p[style|class|id|align],span[style|class|id],img[*],figure[*],figcaption[*]';
+		$mceInit['image_advtab']                = true;
+		$mceInit['image_caption']               = true;
 		$mceInit['add_unload_trigger']         = false;
 
 		// Rimuove i plugin TinyMCE 4 legacy non supportati o sostituiti in TinyMCE 7/8

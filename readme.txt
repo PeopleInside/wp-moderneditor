@@ -4,7 +4,7 @@ Tags: tinymce, classic editor, gutenberg, dark mode, wysiwyg, editor
 Requires at least: 6.0
 Tested up to: 7.1.1
 Requires PHP: 7.4
-Stable tag: 1.3.9
+Stable tag: 1.4.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -25,7 +25,21 @@ Yes. TinyMCE is distributed by Tiny Technologies under the GNU GPLv2 or later li
 
 == Changelog ==
 
-= 1.3.8 =
+= 1.4.0 =
+* Feature: Choose default editor between Modern Classic Editor and Block Editor (Gutenberg) in plugin settings.
+* Feature: Allow users to switch editors when creating or editing posts and pages, configurable in settings.
+* Feature: Direct "Add New (Classic)" and "Add New (Blocks)" submenu links under Posts and Pages and in the top Admin Bar (+ New).
+* Feature: Row actions "Edit (Classic)" and "Edit (Blocks)" in post and page listing tables.
+* Feature: One-click editor switcher sidebar metabox in the editor with confirmation and content preservation.
+* Fix: Anchor link button is now strictly highlighted/active only for anchor links (#) and bookmarks, resolving the issue where regular links activated both buttons.
+* Fix: Double-clicking standard links opens the standard link dialog instead of the anchor dialog.
+* Feature: Add image alignment and text wrapping options (align left/right with text wrap, center, inline) to allow writing text near images.
+* Feature: Quick image alignment context toolbar when clicking images in the editor.
+* Feature: Support image alignment in WordPress Media Library insertion modal and image dialog class list.
+* Setting: Add option in settings to toggle image alignment and text wrapping controls.
+
+= 1.3.9 =
+* Maintenance release.
 * Improved update - fix
 
 = 1.3.8 =

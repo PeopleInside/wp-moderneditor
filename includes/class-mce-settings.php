@@ -55,6 +55,8 @@ class MCE_Settings {
 	public static function get_defaults(): array {
 		return array(
 			'disable_gutenberg'          => true,  // Di default disattivato per articoli e pagine.
+			'default_editor'             => 'classic', // 'classic' | 'block' (predefinito editor classico)
+			'allow_user_editor_switch'   => true,  // Consente agli utenti di scegliere e cambiare editor per ciascun articolo/pagina
 			'disabled_post_types'        => array( 'post', 'page' ), // Articoli e pagine abilitati all'editor classico di default.
 			'dark_mode'                  => 'system', // 'system' | 'light' | 'dark'
 			'toolbar_mode'               => 'extended', // 'standard' | 'extended' | 'full'
@@ -63,6 +65,7 @@ class MCE_Settings {
 			'tinymce_major'              => '8',  // '7' | '8' (predefinito TinyMCE 8)
 			'auto_check_tinymce_updates' => true,  // Controllo periodico via wp-cron attivo di default.
 			'editor_height'              => 600,   // Altezza in pixel dell'area editor.
+			'enable_image_alignment'     => true,  // Allineamento immagini con testo a lato (wrap).
 		);
 	}
 
@@ -113,6 +116,8 @@ class MCE_Settings {
 		$output   = array();
 
 		$output['disable_gutenberg'] = ! empty( $input['disable_gutenberg'] );
+		$output['default_editor'] = ( isset( $input['default_editor'] ) && 'block' === $input['default_editor'] ) ? 'block' : 'classic';
+		$output['allow_user_editor_switch'] = ! empty( $input['allow_user_editor_switch'] );
 
 		$allowed_post_types = array_keys( $this->get_available_post_types() );
 		$post_types          = isset( $input['disabled_post_types'] ) && is_array( $input['disabled_post_types'] )
@@ -138,6 +143,8 @@ class MCE_Settings {
 
 		$editor_height = isset( $input['editor_height'] ) ? absint( $input['editor_height'] ) : $defaults['editor_height'];
 		$output['editor_height'] = ( $editor_height >= 100 && $editor_height <= 2000 ) ? $editor_height : $defaults['editor_height'];
+
+		$output['enable_image_alignment'] = ! empty( $input['enable_image_alignment'] );
 
 		if ( 'local' === $output['editor_source'] ) {
 			$vendor = MCE_Vendor::instance();
@@ -234,13 +241,17 @@ class MCE_Settings {
 				'showDeleteButton' => ( 'none' !== $active['source'] ),
 				'lastKnownLatest' => get_option( 'mce_tinymce_latest_known_version_' . $settings['tinymce_major'], array() ),
 				'i18n'           => array(
-					'checking'       => __( 'Controllo in corso…', 'modern-classic-editor' ),
-					'downloading'    => __( 'Download in corso, potrebbe richiedere qualche secondo…', 'modern-classic-editor' ),
-					'deleting'       => __( 'Eliminazione in corso…', 'modern-classic-editor' ),
-					'upToDate'       => __( 'Stai già usando l\'ultima versione disponibile.', 'modern-classic-editor' ),
-					'updateAvailable' => __( 'È disponibile una nuova versione: ', 'modern-classic-editor' ),
-					'genericError'   => __( 'Si è verificato un errore. Riprova.', 'modern-classic-editor' ),
-					'confirmDelete'  => __( 'Eliminare i file dell\'editor offline? Se confermi, verrà usata la CDN fino al prossimo download manuale.', 'modern-classic-editor' ),
+					'checking'              => __( 'Controllo in corso…', 'modern-classic-editor' ),
+					'downloading'           => __( 'Download in corso, potrebbe richiedere qualche secondo…', 'modern-classic-editor' ),
+					'deleting'              => __( 'Eliminazione in corso…', 'modern-classic-editor' ),
+					'upToDate'              => __( 'Stai già usando l\'ultima versione disponibile.', 'modern-classic-editor' ),
+					'updateAvailable'       => __( 'È disponibile una nuova versione: ', 'modern-classic-editor' ),
+					'genericError'          => __( 'Si è verificato un errore. Riprova.', 'modern-classic-editor' ),
+					'confirmDelete'         => __( 'Eliminare i file dell\'editor offline? Se confermi, verrà usata la CDN fino al prossimo download manuale.', 'modern-classic-editor' ),
+					'noOfflineVersion'      => __( 'Nessuna versione attualmente disponibile offline. L\'editor Classic userà automaticamente la CDN.', 'modern-classic-editor' ),
+					'activeOfflineTemplate' => __( 'Versione attualmente disponibile offline: %1$s (%2$s)', 'modern-classic-editor' ),
+					'bundled'               => __( 'incluse nel plugin', 'modern-classic-editor' ),
+					'downloaded'            => __( 'scaricata', 'modern-classic-editor' ),
 				),
 			)
 		);
@@ -262,15 +273,45 @@ class MCE_Settings {
 			<form method="post" action="options.php">
 				<?php settings_fields( 'mce_settings_group' ); ?>
 
-				<h2 class="title"><?php esc_html_e( 'Editor a blocchi (Gutenberg)', 'modern-classic-editor' ); ?></h2>
+				<h2 class="title"><?php esc_html_e( 'Editor a blocchi (Gutenberg) e Scelta dell\'Editor', 'modern-classic-editor' ); ?></h2>
 				<table class="form-table" role="presentation">
 					<tr>
-						<th scope="row"><?php esc_html_e( 'Disattiva Gutenberg', 'modern-classic-editor' ); ?></th>
+						<th scope="row"><?php esc_html_e( 'Gestione Gutenberg', 'modern-classic-editor' ); ?></th>
 						<td>
 							<label>
 								<input type="checkbox" name="<?php echo esc_attr( self::OPTION_KEY ); ?>[disable_gutenberg]" value="1" <?php checked( $settings['disable_gutenberg'] ); ?> />
-								<?php esc_html_e( 'Usa l\'editor classico invece dell\'editor a blocchi per i tipi di contenuto selezionati qui sotto', 'modern-classic-editor' ); ?>
+								<?php esc_html_e( 'Abilita la gestione dell\'editor classico (Modern Classic Editor) per i tipi di contenuto selezionati', 'modern-classic-editor' ); ?>
 							</label>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row"><?php esc_html_e( 'Editor predefinito', 'modern-classic-editor' ); ?></th>
+						<td>
+							<fieldset>
+								<label style="display:block;margin-bottom:6px;">
+									<input type="radio" name="<?php echo esc_attr( self::OPTION_KEY ); ?>[default_editor]" value="classic" <?php checked( $settings['default_editor'] ?? 'classic', 'classic' ); ?> />
+									<strong><?php esc_html_e( 'Editor classico (Modern Classic Editor)', 'modern-classic-editor' ); ?></strong> — <?php esc_html_e( 'apre l\'editor classico moderno TinyMCE', 'modern-classic-editor' ); ?>
+								</label>
+								<label style="display:block;">
+									<input type="radio" name="<?php echo esc_attr( self::OPTION_KEY ); ?>[default_editor]" value="block" <?php checked( $settings['default_editor'] ?? 'classic', 'block' ); ?> />
+									<strong><?php esc_html_e( 'Editor a blocchi (Gutenberg)', 'modern-classic-editor' ); ?></strong> — <?php esc_html_e( 'apre l\'editor a blocchi standard di WordPress', 'modern-classic-editor' ); ?>
+								</label>
+								<p class="description">
+									<?php esc_html_e( 'Determina quale editor viene aperto di default quando si crea o si modifica un articolo o pagina.', 'modern-classic-editor' ); ?>
+								</p>
+							</fieldset>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row"><?php esc_html_e( 'Consenti cambio editor', 'modern-classic-editor' ); ?></th>
+						<td>
+							<label>
+								<input type="checkbox" name="<?php echo esc_attr( self::OPTION_KEY ); ?>[allow_user_editor_switch]" value="1" <?php checked( $settings['allow_user_editor_switch'] ?? true ); ?> />
+								<strong><?php esc_html_e( 'Consenti agli utenti di scegliere e cambiare l\'editor per ogni articolo o pagina', 'modern-classic-editor' ); ?></strong>
+							</label>
+							<p class="description">
+								<?php esc_html_e( 'Quando attivo, consente di scegliere tra Editor Classico e Gutenberg: aggiunge i pulsanti separati "Aggiungi (Classico)" e "Aggiungi (Blocchi)" nel menu e nella barra in alto, i link "Modifica (Classico)" e "Modifica (Blocchi)" negli elenchi, e un box nella barra laterale dell\'editor per passare da un editor all\'altro.', 'modern-classic-editor' ); ?>
+							</p>
 						</td>
 					</tr>
 					<tr>
@@ -288,7 +329,7 @@ class MCE_Settings {
 										<?php echo esc_html( $label ); ?>
 									</label>
 								<?php endforeach; ?>
-								<p class="description"><?php esc_html_e( 'Solo i tipi selezionati torneranno all\'editor classico.', 'modern-classic-editor' ); ?></p>
+								<p class="description"><?php esc_html_e( 'Solo i tipi selezionati useranno la gestione dell\'editor classico.', 'modern-classic-editor' ); ?></p>
 							</fieldset>
 						</td>
 					</tr>
@@ -491,6 +532,18 @@ class MCE_Settings {
 								<input type="checkbox" name="<?php echo esc_attr( self::OPTION_KEY ); ?>[enable_menubar]" value="1" <?php checked( $settings['enable_menubar'] ); ?> />
 								<?php esc_html_e( 'Mostra la barra dei menu (File, Modifica, Inserisci, ecc.)', 'modern-classic-editor' ); ?>
 							</label>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row"><?php esc_html_e( 'Allineamento immagini e testo a lato', 'modern-classic-editor' ); ?></th>
+						<td>
+							<label>
+								<input type="checkbox" name="<?php echo esc_attr( self::OPTION_KEY ); ?>[enable_image_alignment]" value="1" <?php checked( $settings['enable_image_alignment'] ); ?> />
+								<?php esc_html_e( 'Abilita controlli per allineare le immagini (a sinistra, a destra, al centro) e scrivere testo a lato con scorrimento', 'modern-classic-editor' ); ?>
+							</label>
+							<p class="description">
+								<?php esc_html_e( 'Mostra una barra di strumenti rapida quando selezioni un\'immagine per impostare il testo a lato (sinistra o destra con wrap del testo), e applica automaticamente gli stili e le classi di allineamento WordPress.', 'modern-classic-editor' ); ?>
+							</p>
 						</td>
 					</tr>
 				</table>

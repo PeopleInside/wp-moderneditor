@@ -427,8 +427,19 @@
 		config.end_container_on_empty_block = true;
 		config.pad_empty_with_br = true;
 		config.media_live_embeds = true;
-		config.extended_valid_elements = 'iframe[src|title|width|height|allowfullscreen|frameborder|style|class|id|loading|referrerpolicy],p[style|class|id|align],span[style|class|id],img[*]';
+		config.extended_valid_elements = 'iframe[src|title|width|height|allowfullscreen|frameborder|style|class|id|loading|referrerpolicy],p[style|class|id|align],span[style|class|id],img[*],figure[*],figcaption[*]';
 		config.custom_elements = '~iframe';
+
+		var isIt = settings.isItalian !== undefined ? !! settings.isItalian : ( ( document.documentElement.lang || navigator.language || '' ).toLowerCase().indexOf( 'it' ) === 0 );
+
+		config.image_advtab = true;
+		config.image_caption = true;
+		config.image_class_list = [
+			{ title: isIt ? 'Nessun allineamento' : 'None', value: 'alignnone' },
+			{ title: isIt ? 'Allinea a sinistra (testo a destra)' : 'Align left (wrap text)', value: 'alignleft' },
+			{ title: isIt ? 'Allinea a destra (testo a sinistra)' : 'Align right (wrap text)', value: 'alignright' },
+			{ title: isIt ? 'Al centro' : 'Align center', value: 'aligncenter' }
+		];
 
 		// Imposta formattazione pulita per i menu a tendina di Carattere e Dimensione carattere
 		var defaultFontFamilies =
@@ -498,6 +509,13 @@
 		config.content_style =
 			'.wp-embed-preview-block { margin: 1em 0; border: 1px dashed currentColor; opacity: 0.85; border-radius: 4px; padding: 4px; overflow: hidden; } ' +
 			'.wp-embed-preview-block iframe { max-width: 100%; } ' +
+			'img.alignleft, .alignleft { float: left !important; margin: 0.5em 1.5em 0.5em 0 !important; max-width: 100%; height: auto; } ' +
+			'img.alignright, .alignright { float: right !important; margin: 0.5em 0 0.5em 1.5em !important; max-width: 100%; height: auto; } ' +
+			'img.aligncenter, .aligncenter { display: block !important; margin-left: auto !important; margin-right: auto !important; clear: both !important; max-width: 100%; height: auto; float: none !important; } ' +
+			'img.alignnone, .alignnone { float: none; margin: 0.5em 0; } ' +
+			'figure.alignleft { float: left !important; margin: 0.5em 1.5em 0.5em 0 !important; } ' +
+			'figure.alignright { float: right !important; margin: 0.5em 0 0.5em 1.5em !important; } ' +
+			'figure.aligncenter { display: block !important; margin-left: auto !important; margin-right: auto !important; clear: both !important; float: none !important; } ' +
 			'.mce-item-anchor, a.mce-item-anchor, a[id]:not([href]), a[name]:not([href]), span.mce-item-anchor { display: inline-block !important; background-color: rgba(255, 215, 0, 0.4) !important; border: 1px dashed #d97706 !important; border-radius: 3px !important; padding: 0 4px !important; margin: 0 2px !important; vertical-align: baseline !important; min-width: 14px; min-height: 14px; } ' +
 			'.mce-item-anchor:empty::before, a.mce-item-anchor:empty::before, a[id]:not([href]):empty::before, a[name]:not([href]):empty::before, span.mce-item-anchor:empty::before { content: "⚓" !important; font-size: 13px !important; line-height: 1 !important; color: #92400e !important; display: inline-block !important; }';
 
@@ -560,10 +578,11 @@
 		};
 
 	function openWpMediaFrame( editor ) {
+		var isIt = settings.isItalian !== undefined ? !! settings.isItalian : ( ( document.documentElement.lang || navigator.language || '' ).toLowerCase().indexOf( 'it' ) === 0 );
 		if ( typeof window.wp !== 'undefined' && window.wp.media ) {
 			var frame = window.wp.media( {
-				title: 'Seleziona o carica file multimediale',
-				button: { text: 'Inserisci nell\'articolo' },
+				title: isIt ? 'Seleziona o carica file multimediale' : 'Select or upload media',
+				button: { text: isIt ? 'Inserisci nell\'articolo' : 'Insert into post' },
 				multiple: true
 			} );
 
@@ -574,15 +593,59 @@
 					if ( attachment && attachment.url ) {
 						if ( attachment.type === 'image' ) {
 							var alt = attachment.alt || attachment.title || '';
-							var imgHtml = '<img src="' + attachment.url + '" alt="' + alt + '"';
-							if ( attachment.width ) {
-								imgHtml += ' width="' + attachment.width + '"';
+							var display = {};
+							try {
+								if ( frame.state().display ) {
+									display = frame.state().display( attachmentModel ).toJSON();
+								}
+							} catch ( errDisplay ) {}
+
+							var align = ( display.align || attachment.align || 'none' ).toLowerCase();
+							var size = display.size || 'full';
+							var imgUrl = attachment.url;
+							var width = attachment.width;
+							var height = attachment.height;
+
+							if ( attachment.sizes && attachment.sizes[ size ] ) {
+								imgUrl = attachment.sizes[ size ].url;
+								width = attachment.sizes[ size ].width;
+								height = attachment.sizes[ size ].height;
 							}
-							if ( attachment.height ) {
-								imgHtml += ' height="' + attachment.height + '"';
+
+							var classNames = [];
+							var inlineStyles = [];
+
+							if ( align === 'left' ) {
+								classNames.push( 'alignleft' );
+								inlineStyles.push( 'float: left', 'margin: 0.5em 1.5em 0.5em 0', 'max-width: 100%', 'height: auto' );
+							} else if ( align === 'right' ) {
+								classNames.push( 'alignright' );
+								inlineStyles.push( 'float: right', 'margin: 0.5em 0 0.5em 1.5em', 'max-width: 100%', 'height: auto' );
+							} else if ( align === 'center' ) {
+								classNames.push( 'aligncenter' );
+								inlineStyles.push( 'display: block', 'margin-left: auto', 'margin-right: auto', 'clear: both', 'max-width: 100%', 'height: auto' );
+							} else {
+								classNames.push( 'alignnone' );
+							}
+
+							var classAttr = classNames.length ? ' class="' + classNames.join( ' ' ) + '"' : '';
+							var styleAttr = inlineStyles.length ? ' style="' + inlineStyles.join( '; ' ) + ';"' : '';
+							var imgHtml = '<img src="' + imgUrl + '" alt="' + alt + '"' + classAttr + styleAttr;
+							if ( width ) {
+								imgHtml += ' width="' + width + '"';
+							}
+							if ( height ) {
+								imgHtml += ' height="' + height + '"';
 							}
 							imgHtml += ' />';
-							editor.insertContent( imgHtml );
+
+							// Per allineamento sinistro o destro, inserisce l'immagine seguita da uno spazio
+							// in modo che l'utente possa subito iniziare a digitare il testo a lato dell'immagine
+							if ( align === 'left' || align === 'right' ) {
+								editor.insertContent( imgHtml + '&nbsp;' );
+							} else {
+								editor.insertContent( imgHtml );
+							}
 						} else if ( attachment.type === 'video' ) {
 							editor.insertContent( '<video controls src="' + attachment.url + '"></video>' );
 						} else if ( attachment.type === 'audio' ) {
@@ -921,6 +984,38 @@
 				}
 			} );
 
+			function isAnchorElement( el ) {
+				if ( ! el || ! editor.dom ) {
+					return false;
+				}
+				var node = editor.dom.getParent( el, 'a, .mce-item-anchor' );
+				if ( ! node ) {
+					return false;
+				}
+
+				// Elemento con classe mce-item-anchor (generato per le ancore)
+				if ( editor.dom.hasClass( node, 'mce-item-anchor' ) ) {
+					return true;
+				}
+
+				var href = node.getAttribute( 'href' );
+
+				// Se non ha href (o è vuoto), ma ha un id o name, è un'ancora di destinazione (bookmark)
+				if ( href === null || href === '' || typeof href === 'undefined' ) {
+					if ( node.getAttribute( 'id' ) || node.getAttribute( 'name' ) ) {
+						return true;
+					}
+					return false;
+				}
+
+				// Se ha href e inizia con '#' (es. #sezione1), è un link ad un'ancora
+				if ( typeof href === 'string' && href.trim().charAt( 0 ) === '#' ) {
+					return true;
+				}
+
+				return false;
+			}
+
 			// Registra il pulsante e la voce di menu "Link ad ancora" / "Anchor link"
 			editor.ui.registry.addToggleButton( 'link_anchor', {
 				text: isIt ? 'Link ad ancora' : 'Anchor link',
@@ -932,9 +1027,9 @@
 				onSetup: function ( buttonApi ) {
 					var nodeChangeHandler = function ( e ) {
 						try {
-							var isLink = editor.dom.getParent( e.element, 'a[href],a[name],a[id],.mce-item-anchor' );
+							var isAnchor = isAnchorElement( e.element );
 							if ( buttonApi && typeof buttonApi.setActive === 'function' ) {
-								buttonApi.setActive( !! isLink );
+								buttonApi.setActive( !! isAnchor );
 							}
 						} catch ( err ) {}
 					};
@@ -953,6 +1048,198 @@
 				}
 			} );
 
+			function getSelectedImageNode() {
+				var selected = editor.selection.getNode();
+				if ( ! selected ) return null;
+				if ( selected.nodeName === 'IMG' ) return selected;
+				if ( editor.dom.is( selected, 'figure.image' ) ) return selected;
+				return editor.dom.getParent( selected, 'img, figure.image' );
+			}
+
+			function applyImageAlignment( imgNode, align ) {
+				if ( ! imgNode ) return;
+				editor.undoManager.transact( function () {
+					var target = imgNode;
+					var figure = editor.dom.getParent( target, 'figure' );
+					var elToStyle = figure || target;
+
+					editor.dom.removeClass( elToStyle, 'alignleft alignright aligncenter alignnone' );
+					if ( target !== elToStyle ) {
+						editor.dom.removeClass( target, 'alignleft alignright aligncenter alignnone' );
+					}
+
+					if ( align === 'left' ) {
+						editor.dom.addClass( elToStyle, 'alignleft' );
+						editor.dom.setStyle( elToStyle, 'float', 'left' );
+						editor.dom.setStyle( elToStyle, 'margin', '0.5em 1.5em 0.5em 0' );
+						editor.dom.setStyle( elToStyle, 'display', '' );
+						editor.dom.setStyle( elToStyle, 'clear', '' );
+					} else if ( align === 'right' ) {
+						editor.dom.addClass( elToStyle, 'alignright' );
+						editor.dom.setStyle( elToStyle, 'float', 'right' );
+						editor.dom.setStyle( elToStyle, 'margin', '0.5em 0 0.5em 1.5em' );
+						editor.dom.setStyle( elToStyle, 'display', '' );
+						editor.dom.setStyle( elToStyle, 'clear', '' );
+					} else if ( align === 'center' ) {
+						editor.dom.addClass( elToStyle, 'aligncenter' );
+						editor.dom.setStyle( elToStyle, 'float', 'none' );
+						editor.dom.setStyle( elToStyle, 'display', 'block' );
+						editor.dom.setStyle( elToStyle, 'marginLeft', 'auto' );
+						editor.dom.setStyle( elToStyle, 'marginRight', 'auto' );
+						editor.dom.setStyle( elToStyle, 'clear', 'both' );
+					} else {
+						editor.dom.addClass( elToStyle, 'alignnone' );
+						editor.dom.setStyle( elToStyle, 'float', 'none' );
+						editor.dom.setStyle( elToStyle, 'margin', '' );
+						editor.dom.setStyle( elToStyle, 'display', '' );
+						editor.dom.setStyle( elToStyle, 'clear', '' );
+					}
+
+					editor.nodeChanged();
+					syncTargetElement( editor );
+				} );
+			}
+
+			// Intercetta i comandi di allineamento standard della toolbar (JustifyLeft, etc.) quando un'immagine è selezionata
+			editor.on( 'BeforeExecCommand', function ( e ) {
+				var cmd = ( e.command || '' ).toLowerCase();
+				if ( cmd === 'justifyleft' || cmd === 'justifyright' || cmd === 'justifycenter' || cmd === 'justifynone' ) {
+					var img = getSelectedImageNode();
+					if ( img ) {
+						e.preventDefault();
+						if ( cmd === 'justifyleft' ) {
+							applyImageAlignment( img, 'left' );
+						} else if ( cmd === 'justifyright' ) {
+							applyImageAlignment( img, 'right' );
+						} else if ( cmd === 'justifycenter' ) {
+							applyImageAlignment( img, 'center' );
+						} else {
+							applyImageAlignment( img, 'none' );
+						}
+					}
+				}
+			} );
+
+			// Registra i pulsanti per l'allineamento immagini nella toolbar contestuale
+			editor.ui.registry.addToggleButton( 'mce_img_align_left', {
+				icon: 'align-left',
+				tooltip: isIt ? 'Allinea a sinistra (testo a destra)' : 'Align left (wrap text)',
+				onAction: function () {
+					var node = getSelectedImageNode();
+					if ( node ) {
+						applyImageAlignment( node, 'left' );
+					}
+				},
+				onSetup: function ( buttonApi ) {
+					var handler = function () {
+						var node = getSelectedImageNode();
+						if ( buttonApi && typeof buttonApi.setActive === 'function' ) {
+							buttonApi.setActive( !! ( node && ( editor.dom.hasClass( node, 'alignleft' ) || editor.dom.getStyle( node, 'float' ) === 'left' ) ) );
+						}
+					};
+					editor.on( 'NodeChange', handler );
+					return function () {
+						editor.off( 'NodeChange', handler );
+					};
+				}
+			} );
+
+			editor.ui.registry.addToggleButton( 'mce_img_align_center', {
+				icon: 'align-center',
+				tooltip: isIt ? 'Al centro' : 'Align center',
+				onAction: function () {
+					var node = getSelectedImageNode();
+					if ( node ) {
+						applyImageAlignment( node, 'center' );
+					}
+				},
+				onSetup: function ( buttonApi ) {
+					var handler = function () {
+						var node = getSelectedImageNode();
+						if ( buttonApi && typeof buttonApi.setActive === 'function' ) {
+							buttonApi.setActive( !! ( node && ( editor.dom.hasClass( node, 'aligncenter' ) || ( editor.dom.getStyle( node, 'display' ) === 'block' && editor.dom.getStyle( node, 'margin-left' ) === 'auto' ) ) ) );
+						}
+					};
+					editor.on( 'NodeChange', handler );
+					return function () {
+						editor.off( 'NodeChange', handler );
+					};
+				}
+			} );
+
+			editor.ui.registry.addToggleButton( 'mce_img_align_right', {
+				icon: 'align-right',
+				tooltip: isIt ? 'Allinea a destra (testo a sinistra)' : 'Align right (wrap text)',
+				onAction: function () {
+					var node = getSelectedImageNode();
+					if ( node ) {
+						applyImageAlignment( node, 'right' );
+					}
+				},
+				onSetup: function ( buttonApi ) {
+					var handler = function () {
+						var node = getSelectedImageNode();
+						if ( buttonApi && typeof buttonApi.setActive === 'function' ) {
+							buttonApi.setActive( !! ( node && ( editor.dom.hasClass( node, 'alignright' ) || editor.dom.getStyle( node, 'float' ) === 'right' ) ) );
+						}
+					};
+					editor.on( 'NodeChange', handler );
+					return function () {
+						editor.off( 'NodeChange', handler );
+					};
+				}
+			} );
+
+			editor.ui.registry.addToggleButton( 'mce_img_align_none', {
+				icon: 'align-none',
+				tooltip: isIt ? 'Nessun allineamento (in linea)' : 'No alignment (inline)',
+				onAction: function () {
+					var node = getSelectedImageNode();
+					if ( node ) {
+						applyImageAlignment( node, 'none' );
+					}
+				},
+				onSetup: function ( buttonApi ) {
+					var handler = function () {
+						var node = getSelectedImageNode();
+						if ( buttonApi && typeof buttonApi.setActive === 'function' ) {
+							var isAligned = node && (
+								editor.dom.hasClass( node, 'alignleft' ) ||
+								editor.dom.hasClass( node, 'alignright' ) ||
+								editor.dom.hasClass( node, 'aligncenter' ) ||
+								editor.dom.getStyle( node, 'float' ) === 'left' ||
+								editor.dom.getStyle( node, 'float' ) === 'right' ||
+								editor.dom.getStyle( node, 'display' ) === 'block'
+							);
+							buttonApi.setActive( !! ( node && ! isAligned ) );
+						}
+					};
+					editor.on( 'NodeChange', handler );
+					return function () {
+						editor.off( 'NodeChange', handler );
+					};
+				}
+			} );
+
+			editor.ui.registry.addButton( 'mce_img_edit', {
+				icon: 'image',
+				tooltip: isIt ? 'Modifica immagine' : 'Edit image',
+				onAction: function () {
+					editor.execCommand( 'mceImage' );
+				}
+			} );
+
+			if ( settings.enableImageAlignment !== false ) {
+				editor.ui.registry.addContextToolbar( 'imagealignment', {
+					predicate: function ( node ) {
+						return !! ( node && ( node.nodeName === 'IMG' || editor.dom.is( node, 'figure.image' ) || editor.dom.getParent( node, 'img, figure.image' ) ) );
+					},
+					items: 'mce_img_align_left mce_img_align_center mce_img_align_right mce_img_align_none | mce_img_edit',
+					position: 'node',
+					scope: 'node'
+				} );
+			}
+
 			// Seleziona il nodo dell'ancora o del link al clic
 			editor.on( 'click', function ( e ) {
 				var anchorNode = editor.dom.getParent( e.target, 'a[href],a[name],a[id],.mce-item-anchor' );
@@ -963,10 +1250,15 @@
 
 			// Apri finestra di modifica quando si fa doppio clic su un link o un'ancora
 			editor.on( 'dblclick', function ( e ) {
-				var anchorNode = editor.dom.getParent( e.target, 'a[href],a[name],a[id],.mce-item-anchor' );
-				if ( anchorNode ) {
+				if ( isAnchorElement( e.target ) ) {
 					e.preventDefault();
 					openLinkAnchorDialog( editor );
+				} else {
+					var normalLink = editor.dom.getParent( e.target, 'a[href]' );
+					if ( normalLink ) {
+						e.preventDefault();
+						editor.execCommand( 'mceLink' );
+					}
 				}
 			} );
 
