@@ -111,6 +111,7 @@ class MCE_Editor {
 		add_filter( 'wp_editor_settings', array( $this, 'filter_editor_settings' ), 10, 2 );
 		add_filter( 'tiny_mce_before_init', array( $this, 'filter_tinymce_init_settings' ), 10, 2 );
 		add_filter( 'content_save_pre', array( $this, 'normalize_links_on_save' ), 10 );
+		add_filter( 'content_save_pre', array( $this, 'normalize_video_embeds_on_save' ), 11 );
 	}
 
 	/**
@@ -484,5 +485,71 @@ class MCE_Editor {
 			},
 			$content
 		);
+	}
+
+	/**
+	 * Converte eventuali parametri temporali (t= o start= in secondi o h/m/s) negli iframe
+	 * di YouTube salvati nell'articolo nel parametro start=SECONDI supportato dal player embed,
+	 * garantendo che il video parta sempre dal minuto specificato sul frontend del sito.
+	 */
+	public function normalize_video_embeds_on_save( string $content ): string {
+		if ( empty( $content ) || false === strpos( $content, 'youtube' ) ) {
+			return $content;
+		}
+
+		return (string) preg_replace_callback(
+			'/(<iframe\s+[^>]*?src=["\'])([^"\']+)(["\'][^>]*?>)/i',
+			array( $this, 'normalize_single_iframe_src' ),
+			$content
+		);
+	}
+
+	/**
+	 * Callback per normalizzare il sorgente di un singolo iframe YouTube.
+	 */
+	public function normalize_single_iframe_src( array $matches ): string {
+		$prefix = $matches[1];
+		$src    = $matches[2];
+		$suffix = $matches[3];
+
+		if ( ! preg_match( '/(?:youtube(?:-nocookie)?\.com\/embed\/|youtu\.be\/)/i', $src ) ) {
+			return $matches[0];
+		}
+
+		if ( preg_match( '/[?&#](?:t|start)=([a-zA-Z0-9]+)/i', $src, $t_match ) ) {
+			$time_raw = strtolower( $t_match[1] );
+			$seconds  = $this->parse_time_to_seconds( $time_raw );
+			if ( $seconds > 0 ) {
+				$cleaned_src = preg_replace( '/([?&])(?:t|start)=[a-zA-Z0-9]+(&?)/i', '$1', $src );
+				$cleaned_src = rtrim( $cleaned_src, '?&' );
+				$cleaned_src = str_replace( array( '?&', '&&' ), array( '?', '&' ), $cleaned_src );
+				$delim       = ( false === strpos( $cleaned_src, '?' ) ) ? '?' : '&';
+				$new_src     = $cleaned_src . $delim . 'start=' . $seconds;
+				return $prefix . $new_src . $suffix;
+			}
+		}
+
+		return $matches[0];
+	}
+
+	/**
+	 * Converte stringhe temporali come 2824, 2824s, 47m4s, 1h2m3s in secondi interi.
+	 */
+	private function parse_time_to_seconds( string $val ): int {
+		$val = trim( $val );
+		if ( preg_match( '/^\d+s?$/i', $val ) ) {
+			return (int) rtrim( $val, 'sS' );
+		}
+		$seconds = 0;
+		if ( preg_match( '/(\d+)h/i', $val, $m ) ) {
+			$seconds += ( (int) $m[1] ) * 3600;
+		}
+		if ( preg_match( '/(\d+)m/i', $val, $m ) ) {
+			$seconds += ( (int) $m[1] ) * 60;
+		}
+		if ( preg_match( '/(\d+)s/i', $val, $m ) ) {
+			$seconds += (int) $m[1];
+		}
+		return $seconds;
 	}
 }

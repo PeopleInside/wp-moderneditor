@@ -4,7 +4,7 @@ Tags: tinymce, classic editor, gutenberg, dark mode, wysiwyg, editor
 Requires at least: 6.0
 Tested up to: 7.1.1
 Requires PHP: 7.4
-Stable tag: 1.4.0
+Stable tag: 1.4.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -24,6 +24,15 @@ Modern Editor solves two common problems:
 Yes. TinyMCE is distributed by Tiny Technologies under the GNU GPLv2 or later license. The files included in the plugin (and those downloadable from the settings) come directly from the official "tinymce" package published on npm, without any modifications to the code. The GPL license is explicitly declared in the editor initialization (`license_key: 'gpl'`).
 
 == Changelog ==
+
+= 1.4.2 =
+* Fix: Risolto l'errore "Media embed handler threw unknown error" nell'inserimento o incolla di link video (YouTube, Vimeo, ecc.): media_url_resolver è ora completamente conforme alla specifica asincrona basata su Promise di TinyMCE 7 e 8, garantendo risoluzione robusta, gestione oEmbed e fallback sicuro.
+
+= 1.4.1 =
+* Fix: Risolto il problema con l'inserimento di più video nell'editor: ogni video (iframe o blocco multimediale) viene ora isolato nel proprio paragrafo separato, impedendo collisioni di layout, sovrapposizioni e corruzione del markup HTML.
+* Fix: Risolto il supporto per i link video di YouTube con minutaggio iniziale (es. ?t=2824 o 47m4s): il timestamp viene ora convertito e inserito nel formato start=secondi supportato dal player embed sia nell'editor sia al salvataggio.
+* Feature: Implementato media_url_resolver personalizzato per gestire in modo robusto URL di YouTube e Vimeo (inclusi timestamp e playlist) nei dialoghi multimediali di TinyMCE.
+* Feature: Aggiornati extended_valid_elements per supportare iframe completi con attributi moderni (allow, sandbox, referrerpolicy) e tag video/audio HTML5.
 
 = 1.4.0 =
 * Feature: Choose default editor between Modern Classic Editor and Block Editor (Gutenberg) in plugin settings.

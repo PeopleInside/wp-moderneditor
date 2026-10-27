@@ -1,7 +1,7 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Modern Classic Editor 1.4.0\n"
+"Project-Id-Version: Modern Classic Editor 1.4.2\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-09-26 15:00+0000\n"
 "PO-Revision-Date: 2026-09-26 15:00+0000\n"
