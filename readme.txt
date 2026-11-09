@@ -1,10 +1,10 @@
-=== Modern Editor ===
+=== Modern Classic Editor ===
 Contributors: PeopleInside
 Tags: tinymce, classic editor, gutenberg, dark mode, wysiwyg, editor
 Requires at least: 6.0
-Tested up to: 7.1.1
+Tested up to: 7.1.4
 Requires PHP: 7.4
-Stable tag: 1.4.2
+Stable tag: 1.4.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -23,7 +23,19 @@ Modern Editor solves two common problems:
 
 Yes. TinyMCE is distributed by Tiny Technologies under the GNU GPLv2 or later license. The files included in the plugin (and those downloadable from the settings) come directly from the official "tinymce" package published on npm, without any modifications to the code. The GPL license is explicitly declared in the editor initialization (`license_key: 'gpl'`).
 
+== Disclaimer ==
+
+This software is provided "AS IS", without any warranty. While it has been tested and reasonable efforts are made to ensure security and reliability, no guarantees are provided. As an open project, anyone may contribute or report issues, but this does not imply endorsement or liability from the maintainers.
+
+You use this software entirely at your own risk. The authors and contributors are not liable for any damages, data loss, or unexpected behavior resulting from its use, modification, or distribution. Always review and test the code independently before deploying it in critical or production environments.
+
 == Changelog ==
+
+= 1.4.3 =
+* Fix: Critical bug in updater where cache key was incorrectly set to TTL value, causing potential API rate limiting.
+* Fix: Added `github-releases.githubusercontent.com` to the trusted CDN host allowlist, preventing silent download blocks during auto-updates.
+* Change: GitHub release cache reduced from 12 to 2 hours, so new releases are detected sooner.
+* Tested up to WordPress 7.1.4.
 
 = 1.4.2 =
 * Fix: Risolto l'errore "Media embed handler threw unknown error" nell'inserimento o incolla di link video (YouTube, Vimeo, ecc.): media_url_resolver è ora completamente conforme alla specifica asincrona basata su Promise di TinyMCE 7 e 8, garantendo risoluzione robusta, gestione oEmbed e fallback sicuro.
