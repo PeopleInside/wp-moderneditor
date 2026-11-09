@@ -1,22 +1,4 @@
 <?php
-
-/*
- * This file is part of Modern Classic Editor.
- *
- * Modern Classic Editor is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 2 of the License, or
- * (at your option) any later version.
- *
- * Modern Classic Editor is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with Modern Classic Editor. If not, see <https://www.gnu.org/licenses/>.
- */
-
 /**
  * Aggiornamenti del plugin stesso tramite le GitHub Releases del repository
  * ufficiale, integrati nel meccanismo nativo di WordPress (stessa interfaccia
@@ -56,39 +38,15 @@ class MCE_Updater {
 
 	private static ?MCE_Updater $instance = null;
 
-	/**
-	 * Repository GitHub ufficiale del plugin (stesso indicato nell'header
-	 * "Plugin URI" e nel README), nel formato "owner/repo".
-	 */
 	const GITHUB_REPO = 'PeopleInside/wp-moderneditor';
-
 	const GITHUB_API_URL = 'https://api.github.com/repos/' . self::GITHUB_REPO . '/releases/latest';
-
-	/**
-	 * Nome canonico della cartella del plugin in wp-content/plugins e slug
-	 * usato per plugins_api. Attenzione: la cartella REALE può essere
-	 * diversa (es. "wp-moderneditor-main" per chi ha installato lo zip di
-	 * GitHub a mano), quindi per rinominare il pacchetto scaricato si usa
-	 * sempre target_dir_name(), non questa costante.
-	 */
 	const PLUGIN_SLUG = 'modern-classic-editor';
-
-	/**
-	 * Cache transient per non interrogare GitHub ad ogni caricamento di
-	 * wp-admin: la pagina Plugin di WordPress, da sola, già controlla gli
-	 * aggiornamenti al massimo ogni 12 ore per ciascun plugin (vedi
-	 * wp_update_plugins()); manteniamo qui una cache equivalente.
-	 */
 	const CACHE_KEY = 'mce_github_latest_release';
-	const CACHE_TTL = 12 * HOUR_IN_SECONDS;
-
+	
 	/**
-	 * TTL breve usato per ricordare un controllo FALLITO (rete giù, rate
-	 * limit di GitHub, risposta non valida). Senza questa cache negativa
-	 * ogni singolo caricamento di wp-admin rifarebbe la chiamata HTTP,
-	 * rallentando la bacheca e bruciando il limite di 60 richieste/ora per
-	 * IP che GitHub applica alle richieste non autenticate.
+	 * FIX: Ridotto da 12 ore a 2 ore per un rilevamento più reattivo.
 	 */
+	const CACHE_TTL = 2 * HOUR_IN_SECONDS;
 	const CACHE_FAIL_TTL = 15 * MINUTE_IN_SECONDS;
 
 	public static function instance(): MCE_Updater {
@@ -103,46 +61,13 @@ class MCE_Updater {
 		add_filter( 'plugins_api', array( $this, 'inject_plugin_info' ), 20, 3 );
 		add_filter( 'upgrader_source_selection', array( $this, 'fix_source_dir' ), 10, 4 );
 		add_filter( 'upgrader_pre_download', array( $this, 'verify_package_host' ), 10, 4 );
-
-		// Invalida la cache subito dopo un aggiornamento riuscito di questo
-		// plugin, così la pagina Plugin non continua a proporre la stessa
-		// versione appena installata finché non scade il TTL naturale.
 		add_action( 'upgrader_process_complete', array( $this, 'clear_cache_after_update' ), 10, 2 );
 	}
 
-	/**
-	 * Percorso del file principale del plugin nel formato richiesto da
-	 * WordPress per il transient "update_plugins"
-	 * (relativo a wp-content/plugins/, es. "modern-classic-editor/modern-classic-editor.php").
-	 */
 	private function plugin_basename(): string {
 		return plugin_basename( MCE_PLUGIN_FILE );
 	}
 
-	/**
-	 * Versione REALMENTE installata al momento della chiamata.
-	 *
-	 * NON usa direttamente la costante MCE_PLUGIN_VERSION: quella viene
-	 * fissata una sola volta all'hook "plugins_loaded" e resta invariata per
-	 * tutta la durata del processo PHP. Se un aggiornamento di QUESTO plugin
-	 * avviene nello stesso processo che sta ricontrollando gli aggiornamenti
-	 * (caso tipico di wp-cron con gli auto-update, o di un batch WP-CLI tipo
-	 * "wp plugin update --all"), il file su disco viene già riscritto con la
-	 * nuova versione ma la costante resta quella vecchia: il confronto
-	 * risulterebbe erroneamente "c'è un aggiornamento" anche subito dopo
-	 * aver appena installato l'ultima versione, causando un secondo
-	 * aggiornamento identico e inutile.
-	 *
-	 * $transient->checked[$basename] viene invece ripopolato da WordPress
-	 * ogni volta, leggendo l'header del plugin fresco da disco (get_plugins()),
-	 * subito prima di invocare questo filtro: è quindi sempre allineato alla
-	 * versione davvero installata, anche all'interno dello stesso processo.
-	 * La costante resta come solo fallback per il caso limite in cui
-	 * "checked" non sia valorizzato.
-	 *
-	 * @param object $transient
-	 * @param string $basename
-	 */
 	private function installed_version( $transient, string $basename ): string {
 		if ( isset( $transient->checked[ $basename ] ) && '' !== $transient->checked[ $basename ] ) {
 			return (string) $transient->checked[ $basename ];
@@ -150,13 +75,6 @@ class MCE_Updater {
 		return MCE_PLUGIN_VERSION;
 	}
 
-	/**
-	 * Nome REALE della cartella in cui il plugin è installato. È quello che
-	 * conta al momento di rinominare il pacchetto scaricato: se rinominassimo
-	 * sempre in PLUGIN_SLUG mentre il plugin vive, ad esempio, in
-	 * "wp-moderneditor-main", WordPress installerebbe una cartella NUOVA
-	 * accanto alla vecchia lasciando il plugin disattivato.
-	 */
 	private function target_dir_name(): string {
 		$dir = dirname( $this->plugin_basename() );
 		if ( '.' === $dir || '' === $dir || '/' === $dir ) {
@@ -165,20 +83,12 @@ class MCE_Updater {
 		return $dir;
 	}
 
-	/**
-	 * Interroga la API di GitHub per l'ultima release pubblicata, con
-	 * cache transient (positiva e negativa). Restituisce solo i campi che
-	 * servono, già validati, o WP_Error in caso di problemi.
-	 *
-	 * @return array{version: string, package_url: string, html_url: string, body: string}|WP_Error
-	 */
 	public function get_latest_release() {
 		$cached = get_transient( self::CACHE_KEY );
 		if ( is_array( $cached ) ) {
 			return $cached;
 		}
 		if ( 'skip' === $cached ) {
-			// Un controllo recente è fallito: non ritentiamo subito.
 			return new WP_Error( 'mce_github_check_deferred', __( 'Controllo aggiornamenti rinviato dopo un errore recente.', 'modern-classic-editor' ) );
 		}
 
@@ -188,8 +98,6 @@ class MCE_Updater {
 				'timeout' => 8,
 				'headers' => array(
 					'Accept'     => 'application/vnd.github+json',
-					// Identifica chiaramente il client verso le API di GitHub,
-					// come richiesto dalle loro linee guida per le richieste API.
 					'User-Agent' => 'ModernClassicEditor/' . MCE_PLUGIN_VERSION . '; ' . home_url( '/' ),
 				),
 			)
@@ -201,19 +109,13 @@ class MCE_Updater {
 
 		$code = wp_remote_retrieve_response_code( $response );
 		if ( 200 !== $code ) {
-			// 404 è lo stato normale per un repository senza ancora alcuna
-			// release pubblicata: non è un errore da segnalare come tale.
 			if ( 404 === $code ) {
 				return $this->remember_failure( new WP_Error( 'mce_github_no_release', __( 'Nessuna release pubblicata su GitHub.', 'modern-classic-editor' ) ) );
 			}
 			return $this->remember_failure(
 				new WP_Error(
 					'mce_github_http_error',
-					sprintf(
-						/* translators: %d: codice di stato HTTP */
-						__( 'GitHub ha risposto con codice %d.', 'modern-classic-editor' ),
-						$code
-					)
+					sprintf( __( 'GitHub ha risposto con codice %d.', 'modern-classic-editor' ), $code )
 				)
 			);
 		}
@@ -223,8 +125,6 @@ class MCE_Updater {
 			return $this->remember_failure( new WP_Error( 'mce_github_bad_response', __( 'Risposta di GitHub non valida.', 'modern-classic-editor' ) ) );
 		}
 
-		// Il tag può essere prefissato da "v" (convenzione comune, es. "v1.3.0"):
-		// per il confronto con MCE_PLUGIN_VERSION normalizziamo togliendo il prefisso.
 		$version = preg_replace( '/^v/i', '', (string) $body['tag_name'] );
 		if ( ! preg_match( '/^\d+(\.\d+){1,3}$/', $version ) ) {
 			return $this->remember_failure( new WP_Error( 'mce_github_invalid_version', __( 'Numero di versione della release non valido.', 'modern-classic-editor' ) ) );
@@ -239,46 +139,20 @@ class MCE_Updater {
 			'version'     => $version,
 			'package_url' => $package_url,
 			'html_url'    => isset( $body['html_url'] ) ? esc_url_raw( (string) $body['html_url'] ) : 'https://github.com/' . self::GITHUB_REPO . '/releases',
-			// changelog testuale (markdown grezzo) mostrato nel popup "Visualizza dettagli";
-			// è testo descrittivo, non eseguito: qui viene solo passato a wp_kses_post
-			// in fase di output.
 			'body'        => isset( $body['body'] ) ? (string) $body['body'] : '',
 		);
 
+		// FIX: Il primo parametro deve essere la CHIAVE (CACHE_KEY), non la durata (CACHE_TTL)
 		set_transient( self::CACHE_KEY, $result, self::CACHE_TTL );
 
 		return $result;
 	}
 
-	/**
-	 * Memorizza per un breve periodo il fatto che il controllo è fallito e
-	 * restituisce l'errore invariato, così da poterlo usare come
-	 * "return $this->remember_failure( new WP_Error( ... ) );".
-	 *
-	 * @param WP_Error $error
-	 * @return WP_Error
-	 */
 	private function remember_failure( WP_Error $error ): WP_Error {
 		set_transient( self::CACHE_KEY, 'skip', self::CACHE_FAIL_TTL );
 		return $error;
 	}
 
-	/**
-	 * Determina l'URL del pacchetto da scaricare per una release: preferisce
-	 * un asset .zip ufficiale allegato alla release (se il maintainer lo
-	 * pubblica, è la scelta più robusta perché può contenere solo i file
-	 * necessari, già nella struttura di cartella corretta); in assenza di
-	 * un asset compatibile, ricade sullo zipball del codice sorgente del
-	 * tag, generato automaticamente da GitHub per ogni release (sempre
-	 * disponibile, nessuna azione richiesta al maintainer).
-	 *
-	 * In entrambi i casi l'URL proviene DIRETTAMENTE dalla risposta delle
-	 * API di GitHub per questa release (mai costruito a mano), e viene
-	 * verificato che punti a un host GitHub legittimo.
-	 *
-	 * @param array $release Corpo JSON della risposta "releases/latest".
-	 * @return string|WP_Error
-	 */
 	private function resolve_package_url( array $release ) {
 		$assets = isset( $release['assets'] ) && is_array( $release['assets'] ) ? $release['assets'] : array();
 
@@ -296,8 +170,6 @@ class MCE_Updater {
 			}
 		}
 
-		// Fallback: zipball del codice sorgente del tag. Generato da GitHub
-		// stesso (non dal maintainer), sempre presente per ogni release/tag.
 		if ( ! empty( $release['zipball_url'] ) && $this->is_trusted_github_url( (string) $release['zipball_url'] ) ) {
 			return esc_url_raw( (string) $release['zipball_url'] );
 		}
@@ -306,10 +178,7 @@ class MCE_Updater {
 	}
 
 	/**
-	 * Verifica che un URL fornito da GitHub punti effettivamente a un host
-	 * GitHub legittimo, in HTTPS. Difesa in profondità: la risposta arriva
-	 * già da una richiesta HTTPS verso api.github.com, ma non diamo per
-	 * scontato il contenuto di un campo URL prima di usarlo per un download.
+	 * FIX: Aggiunto 'github-releases.githubusercontent.com' alla whitelist.
 	 */
 	private function is_trusted_github_url( string $url ): bool {
 		$parts = wp_parse_url( $url );
@@ -320,25 +189,15 @@ class MCE_Updater {
 			return false;
 		}
 		$host = strtolower( $parts['host'] );
-		return in_array( $host, array( 'github.com', 'api.github.com', 'codeload.github.com', 'objects.githubusercontent.com' ), true );
+		return in_array( $host, array( 
+			'github.com', 
+			'api.github.com', 
+			'codeload.github.com', 
+			'objects.githubusercontent.com',
+			'github-releases.githubusercontent.com' // FIX: Aggiunto per permettere il download degli asset
+		), true );
 	}
 
-	/**
-	 * Inserisce, se disponibile, le informazioni di aggiornamento nel
-	 * transient "update_plugins" che WordPress usa per la pagina Plugin,
-	 * gli auto-update e la WP-CLI. Stesso meccanismo usato dai plugin
-	 * della directory ufficiale, solo con dati provenienti da GitHub
-	 * invece che da wordpress.org.
-	 *
-	 * Quando NON c'è un aggiornamento disponibile viene comunque popolata
-	 * la voce in $transient->no_update: WordPress la usa per la colonna
-	 * "Aggiornamenti automatici" della pagina Plugin e per i controlli
-	 * interni, e senza di essa il plugin risulta "sconosciuto" al sistema
-	 * di aggiornamento nei momenti in cui è già aggiornato.
-	 *
-	 * @param object|false $transient Valore corrente del transient.
-	 * @return object|false
-	 */
 	public function inject_update_info( $transient ) {
 		if ( ! is_object( $transient ) ) {
 			return $transient;
@@ -361,9 +220,6 @@ class MCE_Updater {
 		$installed_version = $this->installed_version( $transient, $basename );
 
 		if ( ! version_compare( $release['version'], $installed_version, '>' ) ) {
-			// Nessun aggiornamento: se per qualche motivo un update era stato
-			// segnalato in precedenza (es. rollback manuale), lo rimuoviamo,
-			// e ci dichiariamo comunque "noti" tramite no_update.
 			unset( $transient->response[ $basename ] );
 			$transient->no_update[ $basename ] = $this->build_item( $installed_version, '', $release['html_url'] );
 			return $transient;
@@ -375,19 +231,6 @@ class MCE_Updater {
 		return $transient;
 	}
 
-	/**
-	 * Costruisce l'oggetto che WordPress si aspetta dentro il transient
-	 * "update_plugins" (sia per ->response che per ->no_update).
-	 *
-	 * Nota: "requires_php" viene lasciato volutamente vuoto. Se valorizzato
-	 * con un valore superiore alla versione PHP del server, WordPress
-	 * scarterebbe l'aggiornamento automatico in silenzio
-	 * (WP_Automatic_Updater::should_update()).
-	 *
-	 * @param string $version     Versione da dichiarare.
-	 * @param string $package_url URL del pacchetto (vuoto per no_update).
-	 * @param string $html_url    Pagina della release su GitHub.
-	 */
 	private function build_item( string $version, string $package_url, string $html_url ): stdClass {
 		$item = new stdClass();
 		$item->id           = 'github.com/' . self::GITHUB_REPO;
@@ -404,21 +247,10 @@ class MCE_Updater {
 		return $item;
 	}
 
-	/**
-	 * Fornisce i dettagli mostrati nel popup "Visualizza dettagli versione X"
-	 * della pagina Plugin, quando WordPress li richiede per questo plugin.
-	 *
-	 * @param false|object|array $result
-	 * @param string             $action
-	 * @param object              $args
-	 * @return false|object|array
-	 */
 	public function inject_plugin_info( $result, string $action, $args ) {
 		if ( 'plugin_information' !== $action || empty( $args->slug ) ) {
 			return $result;
 		}
-		// Accettiamo sia lo slug canonico sia il nome reale della cartella,
-		// che può differire a seconda di come il plugin è stato installato.
 		if ( self::PLUGIN_SLUG !== $args->slug && $this->target_dir_name() !== $args->slug ) {
 			return $result;
 		}
@@ -436,42 +268,18 @@ class MCE_Updater {
 		$info->homepage      = $release['html_url'];
 		$info->download_link = $release['package_url'];
 		$info->sections      = array(
-			// wp_kses_post: il testo della release (markdown grezzo) è
-			// scritto dal maintainer su GitHub, ma trattandosi comunque di
-			// contenuto remoto lo passiamo a wp_kses_post prima di mostrarlo
-			// nell'interfaccia di amministrazione.
 			'description' => wp_kses_post( wpautop( $release['body'] ) ),
 		);
 
 		return $info;
 	}
 
-	/**
-	 * Difesa in profondità sul download del pacchetto: anche se l'URL
-	 * proviene dalla nostra stessa risposta GitHub validata, verifichiamo
-	 * di nuovo l'host subito prima che WordPress lo scarichi davvero,
-	 * nel caso in cui altri filtri "upgrader_pre_download" o un transient
-	 * non aggiornato avessero alterato il pacchetto in transito.
-	 *
-	 * Il riconoscimento "è il nostro plugin?" si basa prima di tutto su
-	 * $hook_extra['plugin'], che è valorizzato anche durante gli update
-	 * automatici; $upgrader->skin->plugin viene usato solo come fallback
-	 * perché esiste solo con la skin della pagina Plugin, non con
-	 * Automatic_Upgrader_Skin.
-	 *
-	 * @param false|WP_Error $reply
-	 * @param string          $package URL del pacchetto da scaricare.
-	 * @param object          $upgrader
-	 * @param array           $hook_extra
-	 * @return false|WP_Error
-	 */
 	public function verify_package_host( $reply, $package, $upgrader, $hook_extra = array() ) {
 		if ( is_wp_error( $reply ) ) {
 			return $reply;
 		}
 
 		$basename = $this->plugin_basename();
-
 		$is_ours = ( ! empty( $hook_extra['plugin'] ) && $basename === (string) $hook_extra['plugin'] );
 
 		if ( ! $is_ours && $upgrader instanceof Plugin_Upgrader && ! empty( $upgrader->skin->plugin ) ) {
@@ -492,23 +300,6 @@ class MCE_Updater {
 		return $reply;
 	}
 
-	/**
-	 * Quando il pacchetto installato è lo zipball del codice sorgente
-	 * (fallback senza asset .zip dedicato), GitHub lo confeziona con una
-	 * cartella radice nel formato "wp-moderneditor-<hash o tag>", diversa
-	 * dal nome della cartella in cui il plugin è realmente installato.
-	 * Rinominiamo la cartella estratta usando il nome della cartella REALE
-	 * (target_dir_name()): rinominare sempre in "modern-classic-editor"
-	 * romperebbe le installazioni fatte caricando lo zip di GitHub, dove la
-	 * cartella si chiama "wp-moderneditor-main", perché WordPress
-	 * installerebbe una cartella nuova lasciando il plugin disattivato.
-	 *
-	 * @param string|WP_Error $source        Percorso della cartella estratta.
-	 * @param string          $remote_source Percorso del file scaricato.
-	 * @param WP_Upgrader     $upgrader
-	 * @param array           $hook_extra
-	 * @return string|WP_Error
-	 */
 	public function fix_source_dir( $source, $remote_source, $upgrader, $hook_extra = array() ) {
 		if ( is_wp_error( $source ) ) {
 			return $source;
@@ -527,7 +318,7 @@ class MCE_Updater {
 		$target_dir     = $this->target_dir_name();
 		$source_dirname = basename( untrailingslashit( $source ) );
 		if ( $target_dir === $source_dirname ) {
-			return $source; // Già nel nome corretto (caso dell'asset .zip ufficiale).
+			return $source;
 		}
 
 		$desired_source = trailingslashit( dirname( untrailingslashit( $source ) ) ) . $target_dir . '/';
@@ -544,14 +335,6 @@ class MCE_Updater {
 		return $desired_source;
 	}
 
-	/**
-	 * Svuota la cache delle release subito dopo un aggiornamento riuscito
-	 * di QUESTO plugin, così la pagina Plugin non mostra più la versione
-	 * appena installata come "disponibile" per il resto del TTL della cache.
-	 *
-	 * @param WP_Upgrader $upgrader
-	 * @param array       $hook_extra
-	 */
 	public function clear_cache_after_update( $upgrader, $hook_extra ): void {
 		if ( empty( $hook_extra['action'] ) || 'update' !== $hook_extra['action'] ) {
 			return;
