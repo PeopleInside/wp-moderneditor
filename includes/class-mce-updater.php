@@ -62,6 +62,31 @@ class MCE_Updater {
 		add_filter( 'upgrader_source_selection', array( $this, 'fix_source_dir' ), 10, 4 );
 		add_filter( 'upgrader_pre_download', array( $this, 'verify_package_host' ), 10, 4 );
 		add_action( 'upgrader_process_complete', array( $this, 'clear_cache_after_update' ), 10, 2 );
+		// FIX: Inizializza il filesystem per prevenire errori fs_unavailable in cron
+		$this->ensure_filesystem_initialized();
+	}
+
+		/**
+	 * Inizializza WP_Filesystem in modo sicuro per gli aggiornamenti in background.
+	 * Risolve il falso positivo "Impossibile accedere al file system" (fs_unavailable)
+	 * su alcuni ambienti quando wp-cron gira senza tutte le variabili d'ambiente.
+	 * Il fix è scoped esclusivamente alla directory dei plugin per massima sicurezza.
+	 */
+	private function ensure_filesystem_initialized() {
+		add_filter( 'filesystem_method', function( $method, $args, $context ) {
+			if ( defined( 'WP_PLUGIN_DIR' ) && is_string( $context ) && strpos( $context, WP_PLUGIN_DIR ) === 0 ) {
+				return 'direct';
+			}
+			return $method;
+		}, 10, 3 );
+
+		if ( wp_doing_cron() || ( defined( 'WP_CLI' ) && WP_CLI ) ) {
+			global $wp_filesystem;
+			if ( ! ( $wp_filesystem instanceof \WP_Filesystem_Base ) ) {
+				require_once ABSPATH . 'wp-admin/includes/file.php';
+				WP_Filesystem();
+			}
+		}
 	}
 
 	private function plugin_basename(): string {
