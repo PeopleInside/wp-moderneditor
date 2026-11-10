@@ -4,7 +4,7 @@ Tags: tinymce, classic editor, gutenberg, dark mode, wysiwyg, editor
 Requires at least: 6.0
 Tested up to: 7.1.4
 Requires PHP: 7.4
-Stable tag: 1.4.3
+Stable tag: 1.4.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -30,6 +30,9 @@ This software is provided "AS IS", without any warranty. While it has been teste
 You use this software entirely at your own risk. The authors and contributors are not liable for any damages, data loss, or unexpected behavior resulting from its use, modification, or distribution. Always review and test the code independently before deploying it in critical or production environments.
 
 == Changelog ==
+
+= 1.4.4 =
+* better self-update code
 
 = 1.4.3 =
 * Fix: Critical bug in updater where cache key was incorrectly set to TTL value, causing potential API rate limiting.
